@@ -1,5 +1,5 @@
 Package: methylClass
-Title: methylClass is an R Package for Methylation-based classification and Diagnosis
+Title: methylClass is an R Package for Methylation-based Classification and Diagnosis
 Version: 1.0.0
 Authors@R: 
     person(given = "Yu",
