@@ -1,0 +1,49 @@
+Package: methylClass
+Title: methylClass is an R Package for Methylation-based classification and Diagnosis
+Version: 1.0.0
+Authors@R: 
+    person(given = "Yu",
+           family = "Liu",
+           role = c("aut", "cre"),
+           email = "yu.liu2@nih.gov",
+           comment = c(ORCID = "0000-0002-8631-4347"))
+Description: methylClass is an R package for methylation-based classification. 
+    In it, we provide the eSVM (ensemble-based support vector machine) model 
+	able to achieve a much better accuracy in methylation data classification 
+	than the popular random forest (RF) model, and also overcomes the time-
+	consuming problem of traditional SVM. Additionally, some novel feature 
+	selection methods, such as SCMER, are included in the package to improve 
+	the classification. Furthermore, because methylation data can be converted 
+	to other types of omics, such as copy number variation (CNV) data, we also 
+	provide several functions for multi-omics study. 
+License: use_mit_license()
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.1
+Imports: 
+    AnnotationDbi (>= 1.52.0),
+    brglm (>= 0.7.2),
+    c060 (>= 0.2.7),
+    caret (>= 6.0.86),
+    dbscan (>= 1.1.8),
+    doParallel (>= 1.0.16),
+    e1071 (>= 1.7.6),
+    foreach (>= 1.5.1),
+    ggplot2 (>= 3.3.3),
+    glmnet (>= 4.1.1),
+    h2o (>= 3.32.1.3),
+    HandTill2001 (>= 1.0.1),
+    IlluminaHumanMethylation450kanno.ilmn12.hg19 (>= 0.6.0),
+    IlluminaHumanMethylationEPICanno.ilm10b4.hg19 (>= 0.6.0),
+    limma (>= 3.46.0),
+    lmtest (>= 0.9.38),
+    Matrix (>= 1.3.2),
+    nnet (>= 7.3.15),
+    org.Hs.eg.db (>= 3.12.0),
+    parallel (>= 4.0.5),
+    randomForest (>= 4.6.14),
+    reticulate (>= 1.19),
+    Rtsne (>= 0.15),
+    scales (>= 1.1.1),
+    xgboost (>= 1.4.1.1)
