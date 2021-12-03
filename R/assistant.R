@@ -1,3 +1,4 @@
+
 #other functions######
 
 
@@ -131,8 +132,8 @@ clustering <- function(y = NULL,
                        legendcolnum = 2
 ){
 
-  #scmerpyfile <- system.file("python", "scmerpypackage.py", package = "methylClass")
-  scmerpyfile <- '/data/liuy47/nihcodes/scmerpypackage.py'
+  scmerpyfile <- system.file("python", "scmerpypackage.py", package = "methylClass")
+  #scmerpyfile <- '/data/liuy47/nihcodes/scmerpypackage.py'
 
 
   if(!is.null(y)){
