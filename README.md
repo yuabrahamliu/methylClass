@@ -43,6 +43,7 @@ The beginning parts of the beta value matrix and the labels are shown below.
 betas[1:6, 1:6]
 ```
 
+```
 #>       cg17386213 cg00450784 cg26483229 cg25834419 cg15650509 cg01663603
 #> S728 0.417431193 0.06888500 0.02767962 0.08226950 0.01270772 0.03160920
 #> S852 0.028862479 0.03899721 0.02587694 0.12622549 0.02272727 0.05666667
@@ -50,13 +51,16 @@ betas[1:6, 1:6]
 #> T481 0.003842124 0.02400132 0.93372674 0.04285327 0.94285353 0.03452562
 #> T834 0.080890052 0.60532931 0.17549443 0.23743340 0.17431657 0.09886629
 #> T900 0.008695652 0.07142857 0.19154229 0.08108108 0.03313253 0.03357314
+```
 
 ```
 head(labels)
 ```
 
+```
 #> [1] MNG        MNG        IDH_Glioma EPN        GBM        GBM       
 #> Levels: GBM < IDH_Glioma < EPN < MNG < MB < PA < PXA
+```
 
 ## Cross validation
 
@@ -95,11 +99,13 @@ Then, the result `RFres` is a matrix with the performance of RF model in the 5 f
 RFres
 ```
 
+```
 #>        misc.error auc.HandTill brier      mlogloss 
 #> rf     0.0656168  0.9937746    0.1986897  0.4688998
 #> rf_LR  0.05511811 0.9827189    0.08251631 0.3270816
 #> rf_FLR 0.06036745 0.9924814    0.0848257  0.191699 
 #> rf_MR  0.06036745 0.9933325    0.09845761 0.2331356
+```
 
 You can see the misclassification error of the raw RF model (rf) is around 0.0656, while all the 3 calibration methods, i.e., LR (logistic regression), FLR (Firth’s regression) and MR (ridge regression), can reduce this error and the best results are from LR, it has an error of 0.0551.
 
@@ -130,11 +136,13 @@ We can see the result of eSVM via the returned `eSVMres`.
 eSVMres
 ```
 
+```
 #>          misc.error auc.HandTill brier      mlogloss 
 #> esvm     0.05249344 0.9927924    0.09054083 0.2242651
 #> esvm_LR  0.04724409 0.9848411    0.07675574 0.2597599
 #> esvm_FLR 0.04986877 0.9867097    0.07542102 0.1824998
 #> esvm_MR  0.05249344 0.9863797    0.0904642  0.2429746
+```
 
 Here, we use the beta values in the data matrix to train the models, and for methylation data, it is also recommended to convert these betas to M values and try to train models on them to see if there is any large difference between the model performance of beta values and M values.
 
@@ -165,6 +173,7 @@ We set the parameter `calibrationmethod` with the vector `c('LR', 'FLR', 'MR')`,
 summary(mods)
 ```
 
+```
 #>                     Length Class     Mode   
 #> mod                    3   -none-    list   
 #> rawscores           2667   -none-    numeric
@@ -174,6 +183,7 @@ summary(mods)
 #> probs.flr           2667   -none-    numeric
 #> glmnet.calfit         12   cv.glmnet list   
 #> probs.mr            2667   -none-    numeric
+```
 
 You can see mods contains 8 slots and the one named ‘mod’ is the raw model trained from the whole dataset, while the ones named ‘platt.calfits’, ‘platt.brglm.calfits’, and ‘glmnet.calfit’ are the 3 calibrated models of ‘LR’, ‘FLR’, and ‘MR’. Other slots are the prediction scores of the models on the whole dataset.
 
