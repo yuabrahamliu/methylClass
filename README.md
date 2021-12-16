@@ -9,7 +9,7 @@ DNA methylation profiling is emerging as a useful tool to increase the accuracy 
 
 ## Package installation
 
-Code of *methylClass* are freely available at https://github.com/yuabrahamliu/methylClass.
+Code of *methylClass* is freely available at https://github.com/yuabrahamliu/methylClass.
 
 The following commands can be used to install this R package.
 
