@@ -4526,12 +4526,13 @@ maintrain <- function(y.. = NULL,
 
                       brglm.ctrl.max.iter = 10000,
 
-                      multiomicsnames = NULL){
+                      multiomicsnames = NULL,
+                      weighted = FALSE){
 
   n.rep. <- 1
 
-  scmerpyfile <- system.file("python", "scmerpypackage.py", package = "methylClass")
-  #scmerpyfile <- '/data/liuy47/nihcodes/scmerpypackage.py'
+  #scmerpyfile <- system.file("python", "scmerpypackage.py", package = "methylClass")
+  scmerpyfile <- '/data/liuy47/nihcodes/scmerpypackage.py'
 
   if(gridsearch == FALSE){
     activation <- activation[1]
@@ -4539,8 +4540,8 @@ maintrain <- function(y.. = NULL,
     rho <- rho[1]
   }
 
-  mogonetpyfile <- system.file("python", "mogonet_r.py", package = "methylClass")
-  #mogonetpyfile <- '/data/liuy47/nihcodes/mogonet_r.py'
+  #mogonetpyfile <- system.file("python", "mogonet_r.py", package = "methylClass")
+  mogonetpyfile <- '/data/liuy47/nihcodes/mogonet_r.py'
 
   test_inverval <- 50
   featurescale <- TRUE
@@ -4731,7 +4732,7 @@ maintrain <- function(y.. = NULL,
                     cores = cores)
 
     #Calculate Misclassification Errors (ME) on test set
-    err <- sum(rfcv[[1]]$predicted != y..)/length(y..)
+    err <- sum(as.character(rfcv[[1]]$predicted) != as.character(y..))/length(y..)
     message("Misclassification error: ", err, " @ ", Sys.time(), "\n")
 
     trainscores <- rfcv[[1]]$votes
@@ -4748,9 +4749,10 @@ maintrain <- function(y.. = NULL,
                                        mc.cores = cores,
                                        C.base = C.base,
                                        C.min = C.min,
-                                       C.max = C.max)
+                                       C.max = C.max,
+                                       weighted = weighted)
 
-    err.svm.e1071.probs <- sum(svm.linearcv[[1]]$fitted != y..)/length(y..)
+    err.svm.e1071.probs <- sum(as.character(svm.linearcv[[1]]$fitted) != as.character(y..))/length(y..)
     message("Misclassification error: ",
             err.svm.e1071.probs, " ; @ ", Sys.time(), '\n')
 
@@ -4805,7 +4807,7 @@ maintrain <- function(y.. = NULL,
                                                     save.xgb.model = TRUE)
 
 
-    err.xgb.K.k <- sum(colnames(xgb.train.fit.caret[[2]])[apply(xgb.train.fit.caret[[2]], 1, which.max)] != y..)/length(y..)
+    err.xgb.K.k <- sum(colnames(xgb.train.fit.caret[[2]])[apply(xgb.train.fit.caret[[2]], 1, which.max)] != as.character(y..))/length(y..)
     message("Misclassification Error = ", err.xgb.K.k, '\n')
 
     trainscores <- xgb.train.fit.caret[[2]]
@@ -4826,7 +4828,7 @@ maintrain <- function(y.. = NULL,
                                   mc.cores = cores)
 
 
-    err.probs.glmnet <- sum(colnames(glmnetcv.tuned[[2]])[apply(glmnetcv.tuned[[2]], 1, which.max)] != y..)/length(y..)
+    err.probs.glmnet <- sum(colnames(glmnetcv.tuned[[2]])[apply(glmnetcv.tuned[[2]], 1, which.max)] != as.character(y..))/length(y..)
 
     message("Misclassification error",
             "\n of ElasticNet with alpha = ",
@@ -4871,7 +4873,7 @@ maintrain <- function(y.. = NULL,
     message("Predict eNeural model ... @ ",
             Sys.time(), '\n')
 
-    err.eNeural.probs <- sum(colnames(eNeuralcv[[2]])[apply(eNeuralcv[[2]], 1, which.max)] != y..) / length(y..)
+    err.eNeural.probs <- sum(colnames(eNeuralcv[[2]])[apply(eNeuralcv[[2]], 1, which.max)] != as.character(y..)) / length(y..)
 
     message("Misclassification error: ",
             err.eNeural.probs, " ; @ ", Sys.time(), '\n')
@@ -4941,7 +4943,7 @@ maintrain <- function(y.. = NULL,
 
     trainscores <- scoreses$trainres
 
-    err <- sum(colnames(trainscores)[apply(trainscores, 1, which.max)] != y..) / length(y..)
+    err <- sum(colnames(trainscores)[apply(trainscores, 1, which.max)] != as.character(y..)) / length(y..)
 
     message("Misclassification error: ", err, " ; @ ", Sys.time(), '\n')
 
@@ -4965,7 +4967,8 @@ maintrain <- function(y.. = NULL,
                                viewstandard = viewstandard,
                                platform = platform,
                                multiomicsnames = multiomicsnames,
-                               featurescale = featurescale)
+                               featurescale = featurescale,
+                               weighted = weighted)
 
     message("Predict eSVM model with tuned cost (C) parameter ... ",
             "\n Note: If the training set was scaled by eSVM (done by default),",
@@ -4973,7 +4976,7 @@ maintrain <- function(y.. = NULL,
             Sys.time(), '\n')
 
 
-    err.eSVM.probs <- sum(colnames(svm.linearcv[[2]])[apply(svm.linearcv[[2]], 1, which.max)] != y..) / length(y..)
+    err.eSVM.probs <- sum(colnames(svm.linearcv[[2]])[apply(svm.linearcv[[2]], 1, which.max)] != as.character(y..)) / length(y..)
 
     message("Misclassification error: ",
             err.eSVM.probs, " ; @ ", Sys.time(), '\n')
@@ -5164,6 +5167,9 @@ maintrain <- function(y.. = NULL,
   return(reslist)
 
 }
+
+
+
 
 
 #'Predict sample labels
