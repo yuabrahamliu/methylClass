@@ -817,10 +817,16 @@ JvisR <- function(datlist,
                 min_dist = min_dist)
 
   colnames(res$JSNE) <- paste0('JSNE', seq(1, ncol(res$JSNE), 1))
-  row.names(res$JSNE) <- samplenames
+
+  if(scaledat == TRUE){
+    row.names(res$JSNE) <- samplenames
+  }
 
   colnames(res$JUMAP) <- paste0('JUMAP', seq(1, ncol(res$JUMAP), 1))
-  row.names(res$JUMAP) <- samplenames
+
+  if(scaledat == TRUE){
+    row.names(res$JUMAP) <- samplenames
+  }
 
   return(res)
 
