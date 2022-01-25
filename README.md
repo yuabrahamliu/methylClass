@@ -41,9 +41,6 @@ The beginning parts of the beta value matrix and the labels are shown below.
 
 ```
 betas[1:6, 1:6]
-```
-
-```
 #>       cg17386213 cg00450784 cg26483229 cg25834419 cg15650509 cg01663603
 #> S728 0.417431193 0.06888500 0.02767962 0.08226950 0.01270772 0.03160920
 #> S852 0.028862479 0.03899721 0.02587694 0.12622549 0.02272727 0.05666667
@@ -55,9 +52,6 @@ betas[1:6, 1:6]
 
 ```
 head(labels)
-```
-
-```
 #> [1] MNG        MNG        IDH_Glioma EPN        GBM        GBM       
 #> Levels: GBM < IDH_Glioma < EPN < MNG < MB < PA < PXA
 ```
@@ -97,9 +91,6 @@ Then, the result `RFres` is a matrix with the performance of RF model in the 5 f
 
 ```
 RFres
-```
-
-```
 #>        misc.error auc.HandTill brier      mlogloss 
 #> rf     0.0656168  0.9937746    0.1986897  0.4688998
 #> rf_LR  0.05511811 0.9827189    0.08251631 0.3270816
@@ -134,9 +125,6 @@ We can see the result of eSVM via the returned `eSVMres`.
 
 ```
 eSVMres
-```
-
-```
 #>          misc.error auc.HandTill brier      mlogloss 
 #> esvm     0.05249344 0.9927924    0.09054083 0.2242651
 #> esvm_LR  0.04724409 0.9848411    0.07675574 0.2597599
@@ -171,9 +159,6 @@ We set the parameter `calibrationmethod` with the vector `c('LR', 'FLR', 'MR')`,
 
 ```
 summary(mods)
-```
-
-```
 #>                     Length Class     Mode   
 #> mod                    3   -none-    list   
 #> rawscores           2667   -none-    numeric
