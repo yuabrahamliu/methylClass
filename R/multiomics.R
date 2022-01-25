@@ -1037,6 +1037,19 @@ eSVM <- function(x,
 
   }
 
+  svmensembleerrs <- svmensembleres$errs
+
+  if(sum(svmensembleerrs == 0) >= 1){
+
+    if(sum(svmensembleerrs != 0) >= 1){
+      othererrs <- svmensembleerrs[svmensembleerrs != 0]
+      svmensembleerrs[svmensembleerrs == 0] <- min(othererrs)
+    }else{
+      svmensembleerrs <- rep(0.0001, length(svmensembleerrs))
+    }
+
+  }
+
   weights <- 0.5*log((1 - svmensembleres$errs)/svmensembleres$errs)
   normweights <- weights/sum(weights)
 
@@ -1803,6 +1816,19 @@ eNeural <- function(x,
   if(is.null(neuralensembleres)){
 
     stop('No Neural base learner can be fitted with an error < 0.5')
+
+  }
+
+  neuralensembleerrs <- neuralensembleres$errs
+
+  if(sum(neuralensembleerrs == 0) >= 1){
+
+    if(sum(neuralensembleerrs != 0) >= 1){
+      othererrs <- neuralensembleerrs[neuralensembleerrs != 0]
+      neuralensembleerrs[neuralensembleerrs == 0] <- min(othererrs)
+    }else{
+      neuralensembleerrs <- rep(0.0001, length(neuralensembleerrs))
+    }
 
   }
 
