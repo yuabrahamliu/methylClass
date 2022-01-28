@@ -5247,9 +5247,22 @@ mainpredict <- function(newdat,
     newdat <- newdat[, match(rownames(mod[[1]]$importance),
                              colnames(newdat))]
 
-    scores <- predict(mod[[1]],
-                      newdat,
-                      type = "prob")
+    scores <- tryCatch({
+      predict(mod[[1]],
+              newdat,
+              type = "prob")
+    }, error = function(err){
+      NULL
+    })
+
+    if(is.null(scores)){
+      library(randomForest)
+      scores <- predict(mod[[1]],
+                        newdat,
+                        type = "prob")
+
+    }
+
 
   }else if('SV' %in% names(mod[[1]])){
 
