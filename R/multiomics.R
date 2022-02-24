@@ -435,8 +435,13 @@ samplenumadjust <- function(x,
         baseprobes <- sampledprobelist[[i]]
         otherprobes <- setdiff(probes, baseprobes)
 
-        set.seed(seednum)
-        addprobes <- sample(x = otherprobes, size = addsize, replace = FALSE)
+        if(length(otherprobes) < addsize){
+          set.seed(seednum)
+          addprobes <- sample(x = otherprobes, size = addsize, replace = TRUE)
+        }else{
+          set.seed(seednum)
+          addprobes <- sample(x = otherprobes, size = addsize, replace = FALSE)
+        }
         sampledprobelist[[i]] <- c(sampledprobelist[[i]], addprobes)
         set.seed(seednum)
         sampledprobelist[[i]] <- sample(x = sampledprobelist[[i]],
