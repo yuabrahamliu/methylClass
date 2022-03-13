@@ -3,8 +3,9 @@ title: "Tutorial for R package methylClass"
 author: "Yu Liu"
 date: "12/2/2021"
 output:
-  html_document: default
   pdf_document: default
+  word_document: default
+  html_document: default
 vignette: |
   %\VignetteIndexEntry{tutorial} %\VignetteEngine{knitr::rmarkdown} %\VignetteEncoding{UTF-8}
 ---
@@ -29,7 +30,7 @@ DNA methylation profiling is emerging as a useful tool to increase the accuracy 
 
 ## Package installation
 
-Code of *methylClass* are freely available at <https://github.com/yuabrahamliu/methylClass>.
+Code of *methylClass* is freely available at <https://github.com/yuabrahamliu/methylClass>.
 
 The following commands can be used to install this R package. 
 
