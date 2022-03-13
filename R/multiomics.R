@@ -842,6 +842,7 @@ eSVMpredict <- function(eSVMmod,
 
 }
 
+
 eSVM <- function(x,
                  y,
                  type,
@@ -860,7 +861,8 @@ eSVM <- function(x,
 
 
                  multiomicsnames = NULL,
-                 featurescale = TRUE){
+                 featurescale = TRUE,
+                 weighted = FALSE){
 
   if(is.null(multiomicsnames)){
 
@@ -892,7 +894,8 @@ eSVM <- function(x,
                         cost,
                         cross,
                         probability,
-                        fitted){
+                        fitted,
+                        weighted = weighted){
 
     simpleboot <- function(resrange,
                            sampleseed,
@@ -923,7 +926,9 @@ eSVM <- function(x,
       }
 
       set.seed(sampleseed)
-      bootressampleididx <- sample(x = bootressampleididx, size = samplesize, replace = FALSE)
+      bootressampleididx <- sample(x = bootressampleididx,
+                                   size = samplesize,
+                                   replace = FALSE)
       bootressampleid <- groups$sampleid[bootressampleididx]
       rm(grouplist)
 
@@ -960,6 +965,12 @@ eSVM <- function(x,
                           sampleseed = j,
                           samplevar = x)
 
+    if(weighted == TRUE){
+      classweights <- 100/table(bootdat$resampleresponse$Response)
+    }else{
+      classweights <- NULL
+    }
+
     svmres <- e1071::svm(x = bootdat$resamplevars[,sampledprobes],
                          y = bootdat$resampleresponse$Response,
                          scale = featurescale,
@@ -968,7 +979,9 @@ eSVM <- function(x,
                          cost = cost,
                          cross = cross,
                          probability = probability,
-                         fitted = fitted)
+                         fitted = fitted,
+
+                         class.weights = classweights)
     colnames(svmres$SV) <- sampledprobes
 
     return(svmres)
@@ -993,7 +1006,8 @@ eSVM <- function(x,
                                 cost = cost,
                                 cross = cross,
                                 probability = probability,
-                                fitted = fitted)
+                                fitted = fitted,
+                                weighted = weighted)
 
       svmreslist[[j]] <- singlesvmres
 
@@ -1025,7 +1039,8 @@ eSVM <- function(x,
                                                kernel = kernel, cost = cost,
                                                cross = cross,
                                                probability = probability,
-                                               fitted = fitted)
+                                               fitted = fitted,
+                                               weighted = weighted)
                                    }
 
     parallel::stopCluster(cl)
@@ -1055,7 +1070,7 @@ eSVM <- function(x,
 
   }
 
-  weights <- 0.5*log((1 - svmensembleres$errs)/svmensembleres$errs)
+  weights <- 0.5*log((1 - svmensembleerrs)/svmensembleerrs)
   normweights <- weights/sum(weights)
 
   svmensembleres$weights <- weights
@@ -1098,7 +1113,8 @@ subfunc_eSVM_train_tuner_mc <- function(data.xTrain,
                                         platform = 450,
 
                                         multiomicsnames = NULL,
-                                        featurescale = TRUE){
+                                        featurescale = TRUE,
+                                        weighted = FALSE){
 
   # Cost C grid + give feedback and Sys.time
   Cost.l <- as.list(C.base^(C.min:C.max))
@@ -1126,7 +1142,8 @@ subfunc_eSVM_train_tuner_mc <- function(data.xTrain,
                                            platform = platform,
 
                                            multiomicsnames = multiomicsnames,
-                                           featurescale = featurescale)
+                                           featurescale = featurescale,
+                                           weighted = weighted)
 
   }
 
@@ -1152,7 +1169,8 @@ train_eSVM <- function(y,
                        platform = 450,
 
                        multiomicsnames = NULL,
-                       featurescale = TRUE){
+                       featurescale = TRUE,
+                       weighted = FALSE){
 
   ## 1. Crossvalidate SVM/LiblineaR - Cost parameter for optimal
   set.seed(seed, kind = "default")
@@ -1180,7 +1198,8 @@ train_eSVM <- function(y,
                                                            platform = platform,
 
                                                            multiomicsnames = multiomicsnames,
-                                                           featurescale = featurescale)
+                                                           featurescale = featurescale,
+                                                           weighted = weighted)
 
 
 
@@ -2220,6 +2239,7 @@ mainfeature <- function(y.. = NULL,
 
 #mainwrapper####
 
+
 #'Cross validation on model performance
 #'
 #'Cross validation on model performance without calibration.
@@ -2659,15 +2679,15 @@ maincv <- function(y.. = NULL,
                    lr_e = 5e-4,
                    lr_c = 1e-3,
 
-                   multiomicsnames = NULL
-){
+                   multiomicsnames = NULL,
+                   weighted = FALSE){
 
   trainsub <- 'betas.train'
   testsub <- 'betas.test'
   n.rep. <- 1
 
-  scmerpyfile <- system.file("python", "scmerpypackage.py", package = "methylClass")
-  #scmerpyfile <- '/data/liuy47/nihcodes/scmerpypackage.py'
+  #scmerpyfile <- system.file("python", "scmerpypackage.py", package = "methylClass")
+  scmerpyfile <- '/data/liuy47/nihcodes/scmerpypackage.py'
 
   if(gridsearch == FALSE){
     activation <- activation[1]
@@ -2675,8 +2695,8 @@ maincv <- function(y.. = NULL,
     rho <- rho[1]
   }
 
-  mogonetpyfile <- system.file("python", "mogonet_r.py", package = "methylClass")
-  #mogonetpyfile <- '/data/liuy47/nihcodes/mogonet_r.py'
+  #mogonetpyfile <- system.file("python", "mogonet_r.py", package = "methylClass")
+  mogonetpyfile <- '/data/liuy47/nihcodes/mogonet_r.py'
 
   test_inverval <- 50
   featurescale <- TRUE
@@ -3157,7 +3177,8 @@ maincv <- function(y.. = NULL,
                                            mc.cores = cores,
                                            C.base = C.base,
                                            C.min = C.min,
-                                           C.max = C.max)
+                                           C.max = C.max,
+                                           weighted = weighted)
 
         message("Predict SVM model with tuned cost (C) parameter ... ",
                 "\n Note: \'If the training set was scaled by svm (done by default),",
@@ -3486,7 +3507,8 @@ maincv <- function(y.. = NULL,
                                    viewstandard = viewstandard,
                                    platform = platform,
                                    multiomicsnames = multiomicsnames,
-                                   featurescale = featurescale)
+                                   featurescale = featurescale,
+                                   weighted = weighted)
 
         message("Predict eSVM model with tuned cost (C) parameter ... ",
                 "\n Note: If the training set was scaled by eSVM (done by default),",
@@ -5201,8 +5223,6 @@ maintrain <- function(y.. = NULL,
 
 
 
-
-
 #'Predict sample labels
 #'
 #'Predict sample labels using the trained model
@@ -5280,10 +5300,23 @@ mainpredict <- function(newdat,
 
   }else if('handle' %in% names(mod[[1]])){
 
-    scores.pred.xgboost.vec.test <- predict(object = mod[[1]],
-                                            newdata = newdat,
-                                            ntreelimit = mod[[1]]$best_iteration,
-                                            outputmargin = FALSE)
+    scores.pred.xgboost.vec.test <- tryCatch({
+      predict(object = mod[[1]],
+              newdata = newdat,
+              ntreelimit = mod[[1]]$best_iteration,
+              outputmargin = FALSE)
+    }, error = function(err){
+      NULL
+    })
+
+    if(is.null(scores.pred.xgboost.vec.test)){
+      library(xgboost)
+      scores.pred.xgboost.vec.test <- predict(object = mod[[1]],
+                                              newdata = newdat,
+                                              ntreelimit = mod[[1]]$best_iteration,
+                                              outputmargin = FALSE)
+
+    }
 
     scores <- matrix(scores.pred.xgboost.vec.test,
                      nrow = nrow(newdat),
@@ -5294,9 +5327,23 @@ mainpredict <- function(newdat,
 
   }else if('glmnet.fit' %in% names(mod[[1]])){
 
-    scores <- predict(mod[[1]],
-                      newx = newdat,
-                      type="response")[,,1]
+    scores <- tryCatch({
+      predict(mod[[1]],
+              newx = newdat,
+              type="response")[,,1]
+    }, error = function(err){
+      NULL
+    })
+
+    if(is.null(scores)){
+      library(glmnet)
+      scores <- predict(mod[[1]],
+                        newx = newdat,
+                        type="response")[,,1]
+
+
+    }
+
 
 
   }else if('baselearners' %in% names(mod[[1]])){
@@ -5422,6 +5469,7 @@ mainpredict <- function(newdat,
   return(res)
 
 }
+
 
 
 
