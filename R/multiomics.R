@@ -2016,13 +2016,6 @@ diffsites <- function(dat,
 #'  50000, so that the top 50000 most variable features will be selected, and
 #'  the top variable, \code{limma}, or the \code{SCMER} features can then be
 #'  selected further on the prescreened data.
-#'@param seed In some cases, the \code{SCMER} method will perform PCA via a
-#'  randomized truncated SVD, and a random seed need to be set here to ensure
-#'  the result can be repeated. If the features for \code{SCMER} selection are
-#'  more than 500, and the number of principle components need to reconstruct
-#'  the sample-sample distance matrix is less than 80% of the feature number,
-#'  the randomized truncated SVD will be used, and most classification data
-#'  can fulfill this condition. Default value of \code{seed} is 1234.
 #'@param cores The core number need to do parallelization computation. Default
 #'  is 10.
 #'@param topfeaturenumber As mentioned in the \code{subset.CpGs} parameter
@@ -2073,7 +2066,6 @@ mainfeature <- function(y.. = NULL,
                         betas.path,
                         subset.CpGs = 10000,
 
-                        seed = 1234,
                         cores = 10,
                         topfeaturenumber = 50000,
 
@@ -2161,7 +2153,6 @@ mainfeature <- function(y.. = NULL,
                                n_pcs = n_pcs,
                                perplexity = perplexity,
                                threads = cores,
-                               seed = seed,
                                savefigures = savefigures,
                                pythonpath = pythonpath,
                                scmerpyfile = scmerpyfile)
@@ -2936,7 +2927,6 @@ maincv <- function(y.. = NULL,
                                   betas.. = betas.train,
                                   subset.CpGs = subset.CpGs,
 
-                                  seed = seed,
                                   cores = cores,
                                   topfeaturenumber = NULL,
 
@@ -3058,7 +3048,6 @@ maincv <- function(y.. = NULL,
                                   betas.. = betas.train,
                                   subset.CpGs = subset.CpGs,
 
-                                  seed = seed,
                                   cores = cores,
                                   topfeaturenumber = NULL,
 
@@ -4203,7 +4192,7 @@ maincalibration <- function(out.path = "calibration/",
 #'  case, the function will read the data via the directory \code{betas.path}.
 #'  The absolute path of the file of these data should be provided by the
 #'  parameter \code{betas.path}.
-#'@param betas.path If the parameter \code{betas..} is NULL, this parameter is
+#'  @param betas.path If the parameter \code{betas..} is NULL, this parameter is
 #'  necessary to provide the file path of the betas matrix data, so that the
 #'  function will read the data from this path. It should be an absolute path
 #'  string, and the file should be an .rds file.
@@ -4720,7 +4709,6 @@ maintrain <- function(y.. = NULL,
                             betas.. = betas,
                             subset.CpGs = subset.CpGs,
 
-                            seed = seed,
                             cores = cores,
                             topfeaturenumber = NULL,
 

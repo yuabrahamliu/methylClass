@@ -51,9 +51,9 @@
 #'  50000, so that the top 50000 most variable features will be selected, and
 #'  the top variable, \code{limma}, or the \code{SCMER} features can then be
 #'  selected further on the prescreened data.
-#'@param seed Both the \code{SCMER} feature selection method and the tSNE step
-#'  before DBSCAN involve random processes and a random seed is needed to be
-#'  set here to ensure the result can be repeated. Default value is 1234.
+#'@param seed The tSNE step before DBSCAN clustering involve a random process
+#'  and a random seed is needed to be set here to ensure the result can be
+#'  repeated. Default value is 1234.
 #'@param cores The core number need to do parallelization computation. Default
 #'  is 10.
 #'@param topfeaturenumber As mentioned in the \code{subset.CpGs} parameter
@@ -129,8 +129,7 @@ clustering <- function(y = NULL,
 
                        eps = 3.5,
                        minPts = 5,
-                       legendcolnum = 2
-){
+                       legendcolnum = 2){
 
   scmerpyfile <- system.file("python", "scmerpypackage.py", package = "methylClass")
   #scmerpyfile <- '/data/liuy47/nihcodes/scmerpypackage.py'
@@ -150,7 +149,6 @@ clustering <- function(y = NULL,
                             betas.. = betas,
                             subset.CpGs = subset.CpGs,
 
-                            seed = seed,
                             cores = cores,
                             topfeaturenumber = topfeaturenumber,
 
@@ -515,6 +513,13 @@ plotdataorganize <- function(oridat,
 #'@param removedup Some methylation probes can be mapped to multiple genomic
 #'  island regions or gene regions and for these special ones, whether remove
 #'  them from the analysis or not. Defult is TRUE, meaning to remove them.
+#'@param titlesize Font size of the plot title. Default is 20.
+#'@param textsize Font size of the legend title, legend text, axis label, ect.
+#'  Default is 15.
+#'@param face Font face of the plot.
+#'@param annotextsize Font size of the annotation text in the plot. Default is
+#'  4.
+#'@param face Font face of the plot.
 #'@return Will return a list containing 2 slots. One indicates the statistics
 #'  after attributing the probes into different island regions, and the other
 #'  indicates after attributing them into different gene regions, including
@@ -1017,6 +1022,909 @@ mainJvisR <- function(datlist = datlist,
   return(Jvisres)
 
 }
+
+
+
+
+
+summaryfeature <- function(dat, featurecolidx){
+
+  if(!('plyr' %in% installed.packages()[,'Package'])){
+    cat('Package plyr is needed to run this function\n')
+    return(NULL)
+  }
+
+  calmean <- function(block){
+    gene <- unique(block$gene)
+    subblock <- block[-1]
+    submean <- colMeans(subblock)
+    submatrix <- data.frame(submean)
+    submatrix <- t(submatrix)
+    row.names(submatrix) <- gene
+    submatrix <- as.data.frame(submatrix)
+    return(submatrix)
+
+  }
+
+  features <- dat[,featurecolidx]
+  featurefreqs <- table(features)
+  unifeatures <- names(featurefreqs[featurefreqs == 1])
+  mulfeatures <- names(featurefreqs[featurefreqs > 1])
+
+  unipart <- dat[dat[,featurecolidx] %in% unifeatures,]
+  mulpart <- dat[dat[,featurecolidx] %in% mulfeatures,]
+
+  mulpart <- plyr::ddply(.data = mulpart,
+                         .variables = c(names(dat)[featurecolidx]),
+                         .fun = calmean)
+
+  row.names(mulpart) <- mulpart[,featurecolidx]
+  mulpart <- mulpart[-featurecolidx]
+
+  row.names(unipart) <- unipart[,featurecolidx]
+  unipart <- unipart[-featurecolidx]
+
+  finaldat <- rbind(unipart, mulpart)
+  finaldat <- as.matrix(finaldat)
+
+  return(finaldat)
+
+}
+
+#'Summarize the methylation beta values of probes to genes
+#'
+#'Summarize the methylation beta values of probes to genes by averaging the
+#'  probes located closely to the TSS of a gene.
+#'
+#'@param betadat A matrix recording the beta values of methylation probes for
+#'  samples. Each column represents one sample and each row represents one
+#'  probe. The row names are the probe names while the column names should be
+#'  sample IDs.
+#'@param platform The platform of the probes. Can be set as "450K", or "EPIC".
+#'@param group450k850k A vector or single string. If the data is based on 450k
+#'  or EPIC platform, this parameter is needed to define which probes could be
+#'  considered as related to a specific gene. Only the ones located in the
+#'  gene regions included in this parameter will be considered as belong to
+#'  the gene. The value of this parameter can be selected from "TSS200",
+#'  "TSS1500", "1stExon", "5'UTR", '3'UTR", and "Body". The default value is
+#'  the vector c("TSS200", "TSS1500", "1stExon"), which means probes within
+#'  these 3 regions of a gene will be attributed to the gene and their beta
+#'  values will be averaged to get the gene beta value.
+#'@param includemultimatch Some probes can be attributed to more than one
+#'  gene. If this parameter is TRUE, these probes will be involved into the
+#'  beta value calculation for all their related genes. Otherwise, these
+#'  probes will be discarded, so that the beta values of all the genes are
+#'  averaged only from their uniquely related probes. Default is FALSE.
+#'@return A matrix recording the summarized gene beta values for samples.
+#'@export
+togene <- function(betadat,
+                   platform = 'EPIC',
+                   group450k850k = c('TSS200', 'TSS1500', '1stExon'),
+                   includemultimatch = FALSE){
+
+  if(platform == 'EPIC'){
+
+    platform <- 850
+
+  }else{
+
+    platform <- 450
+
+  }
+
+  range27k <- 200
+
+  if(min(betadat) < 0 | max(betadat) > 1){
+
+    cat('Need methylation beta value to run this function and values < 0 or > 1 cannot be used\n')
+    return(NULL)
+
+  }
+
+  beforeprobes <- row.names(betadat)
+
+  tssinfo <- probeannotation(platform = platform, finalprobes = beforeprobes)
+
+  if(is.null(tssinfo)){
+    return(NULL)
+  }
+
+  if(platform == 27){
+    if(length(range27k) == 1){
+      range27k <- c(0, range27k)
+    }else{
+      range27k <- c(min(range27k), max(range27k))
+    }
+
+    tssinfor <- tssinfo[!is.na(tssinfo$Distance_to_TSS),]
+    tssinfor <- tssinfor[(tssinfor$Distance_to_TSS >= as.numeric(min(range27k)) &
+                            tssinfor$Distance_to_TSS < as.numeric(max(range27k))),]
+    tssinfor <- tssinfor[,c('Probe',
+                            'Symbol', 'ENTREZID')]
+  }else{
+    tssinfor <- tssinfo[tssinfo$UCSC_RefGene_Group %in% group450k850k,]
+    tssinfor <- tssinfor[,c('Probe',
+                            'UCSC_RefGene_Name', 'ENTREZID')]
+  }
+
+  tssinfor <- unique(tssinfor)
+
+  probes <- tssinfor$Probe
+
+  if(includemultimatch == FALSE){
+
+    probes <- probes[probes %in% names(table(probes)[table(probes) == 1])]
+
+  }
+
+  tssinfor <- subset(tssinfor, Probe %in% probes)
+
+  tssinfor <- tssinfor[order(tssinfor[,2], tssinfor[,3]),]
+  row.names(tssinfor) <- 1:nrow(tssinfor)
+
+
+  tssinfor$genename <- paste0(tssinfor[,2], '::', tssinfor[,3])
+  tssinfor$genename <- gsub(pattern = '^::', replacement = '',
+                            x = tssinfor$genename)
+  tssinfor$genename <- gsub(pattern = '::$', replacement = '',
+                            x = tssinfor$genename)
+  tssinfor$genename <- gsub(pattern = '^NA::', replacement = '',
+                            x = tssinfor$genename)
+  tssinfor$genename <- gsub(pattern = '::NA$', replacement = '',
+                            x = tssinfor$genename)
+
+
+  betadat <- betadat[tssinfor$Probe,]
+  betadat <- as.data.frame(betadat, stringsAsFactors = FALSE)
+  betadat$genename <- tssinfor$genename
+  betadat <- betadat[,c(ncol(betadat), 1:(ncol(betadat) - 1))]
+
+  betadat <- summaryfeature(dat = betadat, featurecolidx = 1)
+
+  if(is.null(betadat)){
+    return(NULL)
+  }
+
+  genenames <- row.names(betadat)
+  geneorders <- order(genenames)
+  betadat <- betadat[geneorders,]
+
+  return(betadat)
+
+}
+
+
+
+coverredtss <- function(fragments, tssradius = NULL){
+
+  if(!('GenomicFeatures' %in% installed.packages()[,'Package'])){
+    cat('Package GenomicFeatures is needed to run this function\n')
+    return(NULL)
+  }
+
+  if(!('TxDb.Hsapiens.UCSC.hg19.knownGene' %in% installed.packages()[,'Package'])){
+    cat('Package TxDb.Hsapiens.UCSC.hg19.knownGene is needed to run this function\n')
+    return(NULL)
+  }
+
+  if(!('IRanges' %in% installed.packages()[,'Package'])){
+    cat('Package IRanges is needed to run this function\n')
+    return(NULL)
+  }
+
+  if(!('GenomicRanges' %in% installed.packages()[,'Package'])){
+    cat('Package GenomicRanges is needed to run this function\n')
+    return(NULL)
+  }
+
+  if(!('AnnotationDbi' %in% installed.packages()[,'Package'])){
+    cat('Package AnnotationDbi is needed to run this function\n')
+    return(NULL)
+  }
+
+  if(!('org.Hs.eg.db' %in% installed.packages()[,'Package'])){
+    cat('Package org.Hs.eg.db is needed to run this function\n')
+    return(NULL)
+  }
+
+  genecoords <- suppressMessages(
+    GenomicFeatures::genes(TxDb.Hsapiens.UCSC.hg19.knownGene::TxDb.Hsapiens.UCSC.hg19.knownGene))
+  generanges <- genecoords@ranges
+
+  geneids <- genecoords$gene_id
+  geneseqs <- genecoords@seqnames
+  genestrands <- genecoords@strand
+
+  genetssp <- generanges@start[as.vector(genestrands == '+')]
+  genetssm <- generanges@start[as.vector(genestrands == '-')] +
+    generanges@width[as.vector(genestrands == '-')] - 1
+
+  tss <- rep(0, length(genecoords))
+  tss[as.vector(genestrands == '+')] <- genetssp
+  tss[as.vector(genestrands == '-')] <- genetssm
+
+  tssranges <- IRanges::IRanges(start = tss, width = 1)
+  tsscoords <- GenomicRanges::GRanges(seqnames = geneseqs,
+                                      ranges = tssranges,
+                                      strand = genestrands,
+                                      gene_id = geneids)
+
+
+  fragchrs <- gsub(pattern = ':.*$', replacement = '', x = fragments)
+  fragcoords <- gsub(pattern = '^chr.*:', replacement = '', x = fragments)
+  fragstarts <- gsub(pattern = '-.*$', replacement = '', x = fragcoords)
+  fragends <- gsub(pattern = '^.*-', replacement = '', x = fragcoords)
+  fragstarts <- as.numeric(fragstarts)
+  fragends <-as.numeric(fragends)
+
+  fragranges <- IRanges::IRanges(start = fragstarts, end = fragends)
+  fragranges <- GenomicRanges::GRanges(seqnames = fragchrs,
+                                       ranges = fragranges, strand = '*',
+                                       fragmentname = fragments)
+
+  dis <- GenomicRanges::distanceToNearest(x = tsscoords,
+                                          subject = fragranges,
+                                          ignore.strand = TRUE)
+  disvec <- dis@elementMetadata$distance
+
+  rangeinfo <- fragranges[dis@to,]
+  geneinfo <- genecoords[dis@from,]
+  rangeinfo <- as.data.frame(rangeinfo)
+  names(geneinfo) <- 1:length(geneinfo)
+  geneinfo <- as.data.frame(geneinfo)
+  names(rangeinfo) <- paste('range', names(rangeinfo), sep = '_')
+  names(geneinfo) <- paste('gene', names(geneinfo), sep = '_')
+  overlap <- cbind(rangeinfo, geneinfo)
+  overlap$tssdistance <- disvec
+  overlap <- unique(overlap)
+
+
+  genesyms <- AnnotationDbi::select(x = org.Hs.eg.db::org.Hs.eg.db,
+                                    keys = overlap$gene_gene_id,
+                                    columns = 'SYMBOL',
+                                    keytype = 'ENTREZID')
+  overlap <- cbind(overlap, genesyms)
+
+  generes <- data.frame(frag = overlap$range_fragmentname,
+                        seqnames = overlap$gene_seqnames,
+                        start = overlap$gene_start,
+                        end = overlap$gene_end,
+                        width = overlap$gene_width,
+                        strand = overlap$gene_strand,
+                        geneid = overlap$ENTREZID,
+                        genename = overlap$SYMBOL,
+                        TSSdistance = overlap$tssdistance,
+                        stringsAsFactors = FALSE)
+
+  if(!is.null(tssradius)){
+    generes <- subset(generes, TSSdistance < tssradius)
+  }
+
+  return(generes)
+}
+
+#'Summarize the beta values of probes to DNA methylation regions (DMRs)
+#'
+#'Cluster the probes into DNA methylation regions (DMRs) and calculate the
+#'  beta values of the DMRs via averaging the probe beta values within them.
+#'
+#'@param betadat A matrix recording the beta values of methylation probes for
+#'  samples. Each column represents one sample and each row represents one
+#'  probe. The row names are the probe names while the column names should be
+#'  sample IDs.
+#'@param platform The platform of the probes. Can be set as "450K" or "EPIC".
+#'@param maxgap An integer indicating the cutoff of probe-probe distance when
+#'  clustering the probes into DNA methylation regions (DMRs). If the distance
+#'  between 2 neighbor probes is less than this cutoff, they will be clustered
+#'  into the same DMR. Default is 300.
+#'@param TSSradius An integer defining the TSS region that will be considered
+#'  when mapping the genes to DMRs. If an DMR overlaps with a gene region from
+#'  \code{TSSradius} bp upstream to \code{TSSradius} bp downstream of the TSS,
+#'  this gene will be attributed to this DMR. In case when one gene region
+#'  overlaps with more than one DMR, it will be attributed to the DMR with the
+#'  closest distance to it, so that the genes covered by the DMRs can be
+#'  annotated. Default value is 1500.
+#'@return A list with 3 slots. The slot named "betadat" is a matrix recording
+#'  the DMR beta values of samples. The slot named "dmrprobemapping" is a
+#'  data.frame recording the probes covered by each DMR and the coordinates
+#'  and other information of the DMRs and probes. The slot "dmrgenemapping" is
+#'  a data.frame recording the genes whose TSS regions are covered by each
+#'  DMR.
+#'@export
+toDMR <- function(betadat,
+                  platform = 'EPIC',
+                  maxgap = 300,
+                  TSSradius = 1500){
+
+  if(platform == 'EPIC'){
+
+    platform <- 850
+
+  }else{
+
+    platform <- 450
+
+  }
+
+
+  if(platform == 27){
+    annotation <- 'ilmn12.hg19'
+    array <- 'IlluminaHumanMethylation27k'
+  }else if(platform == 450){
+    annotation <- 'ilmn12.hg19'
+    array <- 'IlluminaHumanMethylation450k'
+  }else if(platform == 850){
+    annotation <- 'ilm10b4.hg19'
+    array <- 'IlluminaHumanMethylationEPIC'
+  }else{
+    cat('The parameter `platform` should be provided a value from 27, 450, and 850\n')
+    return(NULL)
+  }
+
+  annopackage <- paste0(array, 'anno.', annotation)
+
+  if(!(annopackage %in% installed.packages()[,'Package'])){
+    cat(paste0('Package ', annopackage, ' is needed to run this function\n'))
+    return(NULL)
+  }
+
+  if(!('bumphunter' %in% installed.packages()[,'Package'])){
+    cat('Package bumphunter is needed to run this function\n')
+    return(NULL)
+  }
+
+  if(min(betadat) < 0 | max(betadat) > 1){
+
+    cat('Need methylation beta value to run this function and values < 0 or > 1 cannot be used\n')
+    return(NULL)
+  }
+
+
+  if(platform == 27){
+    loci <- IlluminaHumanMethylation27kanno.ilmn12.hg19::Locations
+    locus <- intersect(row.names(betadat), row.names(loci))
+    betadat <- betadat[locus,]
+    locus <- loci[locus,]
+  }else if(platform == 450){
+    loci <- IlluminaHumanMethylation450kanno.ilmn12.hg19::Locations
+    locus <- intersect(row.names(betadat), row.names(loci))
+    betadat <- betadat[locus,]
+    locus <- loci[locus,]
+  }else if(platform == 850){
+    loci <- IlluminaHumanMethylationEPICanno.ilm10b4.hg19::Locations
+    locus <- intersect(row.names(betadat), row.names(loci))
+    betadat <- betadat[locus,]
+    locus <- loci[locus,]
+  }
+
+  cl <- bumphunter::clusterMaker(locus$chr, locus$pos, maxGap = maxgap)
+
+  dmrinfor <- bumphunter::regionFinder(x = betadat[,1], chr = locus$chr,
+                                       pos = locus$pos, cluster = cl,
+                                       maxGap = maxgap, cutoff = 0,
+                                       order = FALSE)
+  dmrinfor <- dmrinfor[c('cluster', 'clusterL', 'chr', 'start', 'end')]
+  names(dmrinfor)[2] <- 'probenum'
+  names(dmrinfor)[1] <- 'DMR'
+
+  betadat <- as.data.frame(betadat, stringsAsFactors = FALSE)
+  betadat$dmrname <- cl
+  betadat <- betadat[,c(ncol(betadat), 1:(ncol(betadat) - 1))]
+  betadat$dmrname <- paste0('DMR', betadat$dmrname)
+
+  betadat <- summaryfeature(dat = betadat, featurecolidx = 1)
+
+  if(is.null(betadat)){
+
+    return(NULL)
+  }
+
+  dmrnames <- row.names(betadat)
+  dmridces <- gsub(pattern = 'DMR', replacement = '', x = dmrnames)
+  dmridces <- as.numeric(dmridces)
+  dmrorders <- match(1:length(dmrnames), dmridces)
+  betadat <- betadat[dmrorders,]
+
+  #DMR-probe annotation
+  probemapping <- data.frame(Probe = row.names(locus),
+                             DMR = cl, stringsAsFactors = FALSE)
+  probemapping <- probemapping[order(probemapping$DMR, probemapping$Probe),]
+  row.names(probemapping) <- 1:nrow(probemapping)
+  probemapping <- merge(probemapping, dmrinfor, by = c('DMR'))
+
+  probepart <- probeannotation(platform = platform,
+                               finalprobes = probemapping$Probe)
+  probepart <- probepart[-2]
+  probemapping <- merge(probemapping, probepart, by = c('Probe'))
+
+  probemapping <- probemapping[,c(2, 4, 5, 6, 3,
+                                  1, 7, 8, 9, 10)]
+
+  names(probemapping)[c(3, 4, 5, 7, 8)] <- c('DMR_start', 'DMR_end',
+                                             'Probe_num',
+                                             'Probe_pos', 'Probe_strand')
+  probemapping <- probemapping[order(probemapping$DMR, probemapping$Probe_pos),]
+  probemapping$DMR <- paste0('DMR', probemapping$DMR)
+  probemapping <- unique(probemapping)
+  row.names(probemapping) <- 1:nrow(probemapping)
+
+  #DMR-gene annotation
+  dmrs <- probemapping[,c(1, 2, 3, 4)]
+  dmrs <- unique(dmrs)
+  row.names(dmrs) <- 1:nrow(dmrs)
+
+  dmrfrags <- paste0(dmrs$chr, ':', dmrs$DMR_start, '-', dmrs$DMR_end)
+
+  genemapping <- coverredtss(fragments = dmrfrags, tssradius = TSSradius)
+
+  if(is.null(genemapping)){
+    res <- list(betadat = betadat,
+                dmrprobemapping = probemapping)
+    return(res)
+  }
+
+  dmrs$frag <- dmrfrags
+  dmrs$fragidx <- as.numeric(row.names(dmrs))
+  genemapping <- merge(dmrs, genemapping, by = c('frag'))
+  genemapping <- genemapping[order(genemapping$fragidx,
+                                   genemapping$start,
+                                   genemapping$TSSdistance,
+                                   genemapping$geneid),]
+  genemapping <- unique(genemapping)
+  genemapping <- genemapping[c('DMR', 'chr', 'DMR_start', 'DMR_end',
+                               'geneid', 'genename',
+                               'start', 'end', 'strand', 'TSSdistance')]
+  colnames(genemapping)[c(7, 8, 9, 10)] <- c('Gene_start', 'Gene_end',
+                                             'Gene_strand', 'DMR_TSS_distance')
+  row.names(genemapping) <- 1:nrow(genemapping)
+
+  res <- list(betadat = betadat,
+              dmrprobemapping = probemapping,
+              dmrgenemapping = genemapping)
+
+  return(res)
+
+}
+
+
+
+
+plotconfusion <- function(confmat = confres$confmat,
+                          title,
+                          font = 12){
+
+  library(pheatmap)
+
+  if(sum(round(confmat) != confmat) > 0){
+    format <- "%.2f"
+  }else{
+    format <- "%.0f"
+  }
+
+  pheatmap(confmat, cluster_rows = FALSE, cluster_cols = FALSE,
+           display_numbers = TRUE, number_format = format,
+           main = title,
+           color = c('white',
+                     colorRampPalette(rainbow(600, end = 4/6),
+                                      bias = 1)(600)),
+           fontsize = font)
+
+
+}
+
+
+dbscancomp <- function(tsnedat,
+                       eps = 1.75,
+                       minPts = 2,
+                       classlabels,
+                       title,
+                       font = 12,
+                       plot = TRUE){
+
+  res <- dbscan::dbscan(x = tsnedat, eps = eps, minPts = minPts)
+
+  dbscanlabels <- res$cluster
+  dbscanlabels <- paste0('Cluster', dbscanlabels)
+  dbscanlabels <- factor(x = dbscanlabels,
+                         levels = paste0('Cluster', seq(min(res$cluster),
+                                                        max(res$cluster),
+                                                        1)),
+                         ordered = TRUE)
+
+  mat <- table(classlabels, dbscanlabels)
+  mat <- unclass(mat)
+
+  if(plot == TRUE){
+
+    print(
+      plotconfusion(confmat = mat,
+                    title = title,
+                    font = font)
+    )
+
+  }
+
+  return(mat)
+
+}
+
+
+clusterscreen <- function(confmatrix = confmat, cutoff = 0.8){
+
+  confmatrix <- confmatrix[,2:ncol(confmatrix)]
+  propmat <- apply(X = confmatrix, MARGIN = 2,
+                   FUN = function(x){x/sum(x)})
+  maxes <- apply(X = propmat, MARGIN = 2,
+                 FUN = max)
+  mat <- confmatrix[,maxes > cutoff]
+  propmat <- propmat[,maxes > cutoff]
+
+  kepts <- sum(mat[propmat > cutoff])
+
+  return(kepts)
+}
+
+
+#'Perform grid search to find the best DBSCAN parameters able to keep samples
+#'with a matching relationship between histological labels and methylation
+#'clusters
+#'
+#'Perform grid search across the parameters epsilon and minimum cluster points
+#'  to find the best DBSCAN result to keep the most samples with a matching
+#'  relationship between their histological labels and methylation clusters.
+#'
+#'@param tsnedat A matrix recording the sample coordinates in a  2-dimensional
+#'  tSNE embedding. It should contain 2 columns, and each one corresponds the
+#'  sample coordinates of one dimension. The row names are the sample names.
+#'@param epses The candidate epsilon parameters for DBSCAN clustering on the
+#'  tSNE coordinates. It is a numeric vector to be grid searched. Default is
+#'  a vector from 0.25 to 5.00, with a stepsize of 0.25.
+#'@param minPtses The candidate minimum cluster points parameters for DBSCAN
+#'  clustering on the tSNE coordinates. It is a numeric vector to be searched.
+#'  Default is a vector from 2 to 21, with a stepsize of 1.
+#'@param cutoff A number between 0 and 1. Default value is 0.8, meaning to
+#'  screen for samples with a matching relationship between their histological
+#'  labels and DBSCAN clusters, if a DBSCAN cluster has > 80% of its samples
+#'  with the same histological label, it will be kept, while a cluster without
+#'  so many dominant samples will be dropped. For the dominant clusters, the
+#'  <= 20% minor samples in them will also be dropped. Thus, the kept clusters
+#'  will only contain the dominant samples.
+#'@return Different DBSCAN parameters will generate different clusters so that
+#'  after the filtering, their kept clusters and samples will be different.
+#'  This function will return the parameters with the most samples reserved.
+#'@export
+clustergrid <- function(tsnedat,
+                        epses = seq(0.25, 5, 0.25),
+                        minPtses = seq(2, 21, 1),
+                        cutoff = 0.8,
+                        classlabels){
+
+  for(i in 1:length(epses)){
+    eps <- epses[i]
+    for(j in 1:length(minPtses)){
+      minPts <- minPtses[j]
+
+      confmat <- dbscancomp(tsnedat = tsnedat,
+                            eps = eps,
+                            minPts = minPts,
+                            classlabels = classlabels,
+                            plot = FALSE)
+
+      if(ncol(confmat) <= 2){
+        break()
+      }
+
+      keptnum <- clusterscreen(confmatrix = confmat,
+                               cutoff = cutoff)
+
+      if(i == 1 & j == 1){
+        keptnums <- keptnum
+        epsseries <- eps
+        minPtsseries <- minPts
+      }else{
+        keptnums <- c(keptnums, keptnum)
+        epsseries <- c(epsseries, eps)
+        minPtsseries <- c(minPtsseries, minPts)
+      }
+    }
+
+  }
+
+  finalkept <- max(keptnums)
+  finaleps <- min(epsseries[keptnums == finalkept])
+  finalminPts <- min(minPtsseries[keptnums == finalkept])
+
+  res <- c(finalkept, finaleps, finalminPts, cutoff)
+  names(res) <- c('samplenum', 'eps', 'minPts', 'cutoff')
+
+  return(res)
+
+}
+
+
+
+
+#'Integrate the sample labels and the DBSCAN clustering results and keep the
+#'  samples with a matching relationship between them
+#'
+#'Integrate the sample labels and the DBSCAN clustering results and keep the
+#'  samples with a matching relationship between them.
+#'
+#'@param tsnedat A matrix recording the sample coordinates in a  2-dimensional
+#'  tSNE embedding. It should contain 2 columns, and each one corresponds the
+#'  sample coordinates of one dimension. The row names are the sample names.
+#'@param classlabels A vector or factor recording the sample labels, and label
+#'  order should correspond to the sample order in the \code{tsnedat} matrix.
+#'@param eps The epsilon parameter for DBSCAN to cluster the samples according
+#'  to their tSNE coordinates.
+#'@param minPtses The minimum cluster points parameter for DBSCAN to cluster
+#'  the samples according to their tSNE coordinates.
+#'@param cutoff A float number between 0 and 1. To screen for samples with a
+#'  matching relationship between their class labels and DBSCAN clusters, if a
+#'  DBSCAN cluster has samples with the same class label, and their percetage
+#'  is greater than this cutoff, this cluster will be kept, while a cluster
+#'  without so many dominant samples will be discarded. Then, for the dominant
+#'  clusters, the minor samples in them will also be dropped. Thus, the final
+#'  clusters will only contain the dominant samples.
+#'@return A list with 3 slots will be returned. The slot named "samplenames"
+#'  contains the reserved sample names after the filtering. Another slot named
+#'  "dbscanlabels" contains the DBSCAN cluster IDs for all the samples. The
+#'  slot named "classlabels" contains the class labels of all the samples.
+#'@export
+labelclusters <- function(tsnedat,
+                          classlabels,
+                          eps,
+                          minPts,
+                          cutoff){
+
+
+  res <- dbscan::dbscan(x = tsnedat, eps = eps, minPts = minPts)
+
+  dbscanlabels <- res$cluster
+  dbscanlabels <- paste0('Cluster', dbscanlabels)
+  dbscanlabels <- factor(x = dbscanlabels,
+                         levels = paste0('Cluster', seq(min(res$cluster),
+                                                        max(res$cluster),
+                                                        1)),
+                         ordered = TRUE)
+
+  confmat <- table(classlabels, dbscanlabels)
+  confmat <- unclass(confmat)
+  names(dbscanlabels) <- row.names(tsnedat)
+  names(classlabels) <- row.names(tsnedat)
+
+
+  confmatrix <- confmat[,2:ncol(confmat)]
+  propmat <- apply(X = confmatrix, MARGIN = 2,
+                   FUN = function(x){x/sum(x)})
+  maxes <- apply(X = propmat, MARGIN = 2,
+                 FUN = max)
+  mat <- confmatrix[,maxes > cutoff]
+  propmat <- propmat[,maxes > cutoff]
+  mat[propmat < cutoff] <- 0
+
+  idx <- which(mat > 0, arr.ind = TRUE)
+  idx <- idx[order(idx[,1], idx[,2]),]
+
+  classnames <- row.names(mat)[idx[,1]]
+  clusternames <- colnames(mat)[idx[,2]]
+
+  for(i in 1:length(classnames)){
+
+    classname <- classnames[i]
+    clustername <- clusternames[i]
+
+    samplenames <- names(classlabels)[classlabels %in% classname &
+                                        dbscanlabels %in% clustername]
+
+    if(i == 1){
+      samplenameses <- samplenames
+    }else{
+      samplenameses <- c(samplenameses, samplenames)
+    }
+
+  }
+
+  samplenames <- unique(samplenameses)
+  samplenames <- names(classlabels)[names(classlabels) %in% samplenames]
+
+  res <- list(samplenames = samplenames,
+              dbscanlabels = dbscanlabels,
+              classlabels = classlabels)
+
+  return(res)
+
+}
+
+#'Perform upsampling with SMOTE
+#'
+#'Perform upsampling on small sample classes with SMOTE (Synthetic Minority
+#'  Over-sampling Technique).
+#'
+#'@param dat A matrix with features as columns and samples as rows.
+#'@param labels A vector or factor recording the sample class labels, and the
+#'  label order should match the sample order in the \code{dat} matrix.
+#'@param topfeaturenumber Before performing the upsampling, the most variable
+#'  features in the whole data will be selected and others will be dropped, so
+#'  that the returned data will only contain these top variable features. The
+#'  default value is 50000, meaning the top 50000 variable features will be
+#'  selected. If want to kept all the original features, set it as NULL.
+#'@param cutoff A number to define the small sample classes. Default is 10,
+#'  meaning a sample class with < 10 samples will be deemed as a small sample
+#'  class and upsampling will be performed on it to synthesize some simulated
+#'  samples from its original samples, so that its final sample number can be
+#'  equal to 10.
+#'@param downsampling For the class with a sample number > \code{cutoff}. If
+#'  this parameter is set as TRUE, a dnsampling will be performed on them so
+#'  that their sample number will be reduced to \code{cutoff}. Default value
+#'  is FALSE.
+#'@param sampleseed Random seed for the sampling processes.
+#'@param k The number of the nearest neighbors of a sample to synthesize its
+#'  SMOTE samples. Default is 5.
+#'@param adjustbetas If the synthesized samples have beta values <= 0 or >= 1,
+#'  this parameter can be set as TRUE, so that these values will be replaced
+#'  by the smallest and largest values in the data and also within the range
+#'  of (0, 1).
+#'@return A list with 2 slots. The slot named "dat" is a matrix containing all
+#'  the samples after the upsampling process. The other slot named "labels" is
+#'  a vector with the corresponding class labels.
+#'@export
+balancesampling <- function(dat,
+                            labels,
+                            topfeaturenumber = 50000,
+                            cutoff = 10,
+                            downsampling = FALSE,
+                            sampleseed = 1234,
+                            k = 5,
+                            adjustbetas = TRUE){
+
+  dat <- topvarfeatures(betasmat = dat, topfeaturenumber = topfeaturenumber)
+
+  classsizes <- table(labels)
+
+  names(labels) <- row.names(dat)
+
+  i <- 1
+  for(i in 1:length(classsizes)){
+
+    classname <- names(classsizes)[i]
+
+    classsamples <- names(labels)[labels == classname]
+
+    if(length(classsamples) > cutoff){
+
+      if(downsampling == TRUE){
+
+        set.seed(sampleseed + i - 1)
+        subsamples <- sample(x = classsamples, size = cutoff, replace = FALSE)
+        sublabels <- labels[subsamples]
+        subdat <- dat[subsamples, , drop = FALSE]
+
+      }else{
+
+        subsamples <- classsamples
+        sublabels <- labels[subsamples]
+        subdat <- dat[subsamples, , drop = FALSE]
+
+      }
+
+    }else if(length(classsamples) < cutoff){
+
+      if(length(classsamples) > 1){
+
+        subdat <- dat[classsamples, , drop = FALSE]
+
+        knnres <- dbscan::kNN(x = subdat, k = min(k, nrow(subdat) - 1))
+        knnres <- knnres$id
+        knnresidx <- seq(1, nrow(knnres)*ncol(knnres), by = 1)
+        knnresidxmat <- matrix(data = knnresidx,
+                               nrow = nrow(knnres),
+                               byrow = FALSE)
+        row.names(knnresidxmat) <- 1:nrow(knnresidxmat)
+        colnames(knnresidxmat) <- 1:ncol(knnresidxmat)
+
+
+
+        set.seed(sampleseed + i - 1)
+
+        sampledidx <- sample(x = knnresidx, size = cutoff - length(classsamples), replace = TRUE)
+
+        smoteidx <- do.call(rbind,
+                            lapply(X = sampledidx,
+                                   FUN = function(x){which(knnresidxmat == x, arr.ind = TRUE)}))
+        row.names(smoteidx) <- 1:nrow(smoteidx)
+
+        set.seed(sampleseed + i - 1)
+        zetas <- runif(nrow(smoteidx))
+
+
+        synthesizeddat <- lapply(X = seq(1:nrow(smoteidx)),
+                                 FUN = function(x){subdat[row.names(knnres)[smoteidx[x, 1]],] +
+                                     zetas[x]*(subdat[knnres[smoteidx[x, 1], smoteidx[x, 2]],] -
+                                                 subdat[row.names(knnres)[smoteidx[x, 1]],])})
+        names(synthesizeddat) <- row.names(knnres)[smoteidx[,1]]
+
+        synthesizeddat <- do.call(rbind, synthesizeddat)
+
+
+        subdat <- rbind(subdat, synthesizeddat)
+
+        row.names(subdat) <- createnames(rawnames = row.names(subdat))
+
+        sublabels <- rep(classname, nrow(subdat))
+        names(sublabels) <- row.names(subdat)
+
+      }else{
+
+        subdat <- dat
+
+        knnres <- dbscan::kNN(x = subdat, k = min(k, nrow(subdat) - 1))
+
+        mindist <- min(knnres$dist[knnres$dist > 0])
+        mindistidx <- which(knnres$dist == mindist, arr.ind = TRUE)
+
+        difference <- subdat[knnres$id[mindistidx[1, 1], mindistidx[1, 2]],] -
+          subdat[row.names(knnres$id)[mindistidx[1, 1]],]
+
+        set.seed(sampleseed + i - 1)
+        zetas <- runif(cutoff - length(classsamples))
+
+        synthesizeddat <- lapply(X = 1:length(zetas),
+                                 FUN = function(x){subdat[sub$sampleid[1],] + zetas[x]*difference})
+
+        names(synthesizeddat) <- rep(sub$sampleid[1], length(synthesizeddat))
+
+        synthesizeddat <- do.call(rbind, synthesizeddat)
+
+        subdat <- rbind(subdat[sub$sampleid[1], , drop = FALSE], synthesizeddat)
+
+        row.names(subdat) <- createnames(rawnames = row.names(subdat))
+
+        sublabels <- rep(classname, nrow(subdat))
+        names(sublabels) <- row.names(subdat)
+
+      }
+
+
+
+    }else{
+
+      sublabels <- labels[classsamples]
+      subdat <- dat[classsamples, , drop = FALSE]
+
+    }
+
+    if(i == 1){
+
+      subdats <- subdat
+      sublabelses <- sublabels
+
+    }else{
+
+      subdats <- rbind(subdats, subdat)
+      sublabelses <- c(sublabelses, sublabels)
+
+    }
+
+  }
+
+  if(adjustbetas == TRUE){
+
+    minvalue <- min(subdats[subdats > 0])
+    maxvalue <- max(subdats[subdats < 1])
+
+    subdats[subdats <= 0] <- minvalue
+    subdats[subdats >= 1] <- maxvalue
+
+  }
+
+  res <- list(dat = subdats,
+              labels = sublabelses)
+
+  return(res)
+
+}
+
 
 
 

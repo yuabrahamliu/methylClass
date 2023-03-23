@@ -403,7 +403,6 @@ scmerselection <- function(trimbetasmat,
                            n_pcs = 100,
                            perplexity = 30,
                            threads = 6,
-                           seed = 1234,
                            savefigures = FALSE,
                            pythonpath = NULL,
                            scmerpyfile){
@@ -456,7 +455,6 @@ scmerselection <- function(trimbetasmat,
                            n_pcs = n_pcs,
                            perplexity = perplexity,
                            threads = threads,
-                           seed = seed,
                            savefigures = savefigures)
 
   scmerfeatrues <- scmerfeatrues$features
@@ -684,7 +682,8 @@ subfunc_svm_e1071_linear_train_tuner_mc <- function(data.xTrain,
                                                     verbose = T,
                                                     seed = 1234,
                                                     parallel = T,
-                                                    mc.cores = 4L){
+                                                    mc.cores = 4L,
+                                                    weighted = FALSE){
 
   # Cost C grid + give feedback and Sys.time
   Cost.l <- as.list(C.base^(C.min:C.max))
@@ -702,22 +701,44 @@ subfunc_svm_e1071_linear_train_tuner_mc <- function(data.xTrain,
                       mod.type,
                       kernel.,
                       Cost.l,
-                      n.CV){
+                      n.CV,
+                      weighted = FALSE){
 
-    message("\nTuning e1071 with linear kernel function C = ", Cost.l[[i]],
-            " @ ", Sys.time())
+    if(weighted == TRUE){
 
-    set.seed(seed + 1, kind ="default")
+      classweights <- 100/table(target.yTrain)
 
-    res <- e1071::svm(x = data.xTrain,
-                      y = target.yTrain,
-                      scale = scale.,
-                      type = mod.type,
-                      kernel = kernel.,
-                      cost = Cost.l[[i]],
-                      cross = n.CV,
-                      probability = TRUE,
-                      fitted = TRUE)
+      set.seed(seed + 1, kind ="default")
+
+      res <- e1071::svm(x = data.xTrain,
+                        y = target.yTrain,
+                        scale = scale.,
+                        type = mod.type,
+                        kernel = kernel.,
+                        cross = n.CV,
+                        probability = TRUE,
+                        fitted = TRUE,
+
+                        class.weights = classweights)
+
+    }else{
+      classweights <- NULL
+
+      set.seed(seed + 1, kind ="default")
+
+      res <- e1071::svm(x = data.xTrain,
+                        y = target.yTrain,
+                        scale = scale.,
+                        type = mod.type,
+                        kernel = kernel.,
+                        cost = Cost.l[[i]],
+                        cross = n.CV,
+                        probability = TRUE,
+                        fitted = TRUE,
+
+                        class.weights = classweights)
+
+    }
 
     return(res)
 
@@ -735,6 +756,7 @@ subfunc_svm_e1071_linear_train_tuner_mc <- function(data.xTrain,
                                            kernel. = kernel.,
                                            Cost.l = Cost.l,
                                            n.CV = n.CV,
+                                           weighted = weighted,
                                            #mc.preschedule = T,
                                            #mc.set.seed = T,
                                            mc.cores = mc.cores)
@@ -752,7 +774,8 @@ subfunc_svm_e1071_linear_train_tuner_mc <- function(data.xTrain,
                                          mod.type = mod.type,
                                          kernel. = kernel.,
                                          Cost.l = Cost.l,
-                                         n.CV = n.CV)
+                                         n.CV = n.CV,
+                                         weighted = weighted)
     print(Sys.time())
     return(cvfit.e1071.linear.C.tuner)
   }
@@ -863,7 +886,8 @@ train_SVM_e1071_LK <- function(y, betas.Train,
                                nfolds = 5,
                                C.base = 10, C.min = -3, C.max = 3,
                                scale.internally.by.e1071.svm = T,
-                               mod.type = "C-classification"){
+                               mod.type = "C-classification",
+                               weighted = FALSE){
 
   ## 1. Crossvalidate SVM/LiblineaR - Cost parameter for optimal
   set.seed(seed, kind = "default")
@@ -881,7 +905,8 @@ train_SVM_e1071_LK <- function(y, betas.Train,
                                                                             verbose = T,
                                                                             seed = seed,
                                                                             parallel = T,
-                                                                            mc.cores = mc.cores)
+                                                                            mc.cores = mc.cores,
+                                                                            weighted = weighted)
 
 
   # Extract optimal C or smallest C with highest accuracy
@@ -921,6 +946,7 @@ train_SVM_e1071_LK <- function(y, betas.Train,
               C.tuned.cv)
   return(res)
 }
+
 
 #XGBoost####
 ### Define training & tuning function
