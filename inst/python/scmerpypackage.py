@@ -1878,8 +1878,9 @@ def scmerpy(trimbetasmat,
     
     model = UmapL1(lasso = lasso, ridge = ridge, 
                    n_pcs = n_pcs, perplexity = perplexity, 
-                   use_beta_in_Q = False, n_threads = threads, 
-                   pca_seed = seed)
+                   use_beta_in_Q = False, n_threads = threads)
+                   #use_beta_in_Q = False, n_threads = threads, 
+                   #pca_seed = seed)
     model.fit(adata.X)
     
     #print(*adata.var_names[model.get_mask()])
