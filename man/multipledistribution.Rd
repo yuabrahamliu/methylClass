@@ -45,6 +45,16 @@ the enrichment significance cannot be labeled. Default is FALSE.}
 \item{removedup}{Some methylation probes can be mapped to multiple genomic
 island regions or gene regions and for these special ones, whether remove
 them from the analysis or not. Defult is TRUE, meaning to remove them.}
+
+\item{textsize}{Font size of the legend title, legend text, axis label, ect.
+Default is 15.}
+
+\item{titlesize}{Font size of the plot title. Default is 20.}
+
+\item{face}{Font face of the plot.}
+
+\item{annotextsize}{Font size of the annotation text in the plot. Default is
+4.}
 }
 \value{
 Will return a list containing 2 slots. One indicates the statistics

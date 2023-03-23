@@ -69,7 +69,8 @@ maincv(
   lr_e_pretrain = 0.001,
   lr_e = 5e-04,
   lr_c = 0.001,
-  multiomicsnames = NULL
+  multiomicsnames = NULL,
+  weighted = FALSE
 )
 }
 \arguments{

@@ -62,7 +62,8 @@ maintrain(
   lr_c = 0.001,
   calibrationmethod = NULL,
   brglm.ctrl.max.iter = 10000,
-  multiomicsnames = NULL
+  multiomicsnames = NULL,
+  weighted = FALSE
 )
 }
 \arguments{
@@ -77,9 +78,8 @@ will load it and use it as the sample true labels.}
 and each column is one feature. It can also be set as NULL, and in this
 case, the function will read the data via the directory \code{betas.path}.
 The absolute path of the file of these data should be provided by the
-parameter \code{betas.path}.}
-
-\item{betas.path}{If the parameter \code{betas..} is NULL, this parameter is
+parameter \code{betas.path}.
+@param betas.path If the parameter \code{betas..} is NULL, this parameter is
 necessary to provide the file path of the betas matrix data, so that the
 function will read the data from this path. It should be an absolute path
 string, and the file should be an .rds file.}

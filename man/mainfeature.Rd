@@ -9,7 +9,6 @@ mainfeature(
   betas.. = NULL,
   betas.path,
   subset.CpGs = 10000,
-  seed = 1234,
   cores = 10,
   topfeaturenumber = 50000,
   lasso = 3.25e-07,
@@ -80,14 +79,6 @@ parameter \code{topfeaturenumber} can be set as a numeric value such as
 50000, so that the top 50000 most variable features will be selected, and
 the top variable, \code{limma}, or the \code{SCMER} features can then be
 selected further on the prescreened data.}
-
-\item{seed}{In some cases, the \code{SCMER} method will perform PCA via a
-randomized truncated SVD, and a random seed need to be set here to ensure
-the result can be repeated. If the features for \code{SCMER} selection are
-more than 500, and the number of principle components need to reconstruct
-the sample-sample distance matrix is less than 80\% of the feature number,
-the randomized truncated SVD will be used, and most classification data
-can fulfill this condition. Default value of \code{seed} is 1234.}
 
 \item{cores}{The core number need to do parallelization computation. Default
 is 10.}

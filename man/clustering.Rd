@@ -74,9 +74,9 @@ parameter \code{topfeaturenumber} can be set as a numeric value such as
 the top variable, \code{limma}, or the \code{SCMER} features can then be
 selected further on the prescreened data.}
 
-\item{seed}{Both the \code{SCMER} feature selection method and the tSNE step
-before DBSCAN involve random processes and a random seed is needed to be
-set here to ensure the result can be repeated. Default value is 1234.}
+\item{seed}{The tSNE step before DBSCAN clustering involve a random process
+and a random seed is needed to be set here to ensure the result can be
+repeated. Default value is 1234.}
 
 \item{cores}{The core number need to do parallelization computation. Default
 is 10.}
