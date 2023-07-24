@@ -972,7 +972,7 @@ plotvis <- function(coordat,
 #'@return A list with the J-SNE and J-UMAP coordinates for the input samples,
 #'  with corresponding scatter plots generated
 #'@export
-mainJvisR <- function(datlist = datlist,
+mainJvisR <- function(datlist,
                       labels = NULL,
 
                       n_components = 2,
