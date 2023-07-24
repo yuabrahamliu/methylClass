@@ -1589,6 +1589,10 @@ clusterscreen <- function(confmatrix = confmat, cutoff = 0.8){
 #'  so many dominant samples will be dropped. For the dominant clusters, the
 #'  <= 20% minor samples in them will also be dropped. Thus, the kept clusters
 #'  will only contain the dominant samples.
+#'@param classlabels The histological labels of the samples. Can be a vector, 
+#'  factor. Each element is a label for a sample and the element order in it 
+#'  should be the same as the sample order in the sample data provided by the 
+#'  parameter \code{tsnedat}.
 #'@return Different DBSCAN parameters will generate different clusters so that
 #'  after the filtering, their kept clusters and samples will be different.
 #'  This function will return the parameters with the most samples reserved.
