@@ -110,6 +110,13 @@ makefolds <- function(y, cv.fold = 5, seednum = 1234){
 #'@return Will return a multiple layer list recording the samples assigned to
 #'  each cross validation loop and the samples are indicated by their indeces
 #'  in \code{y}.
+#'@examples
+#'library(methylClass)
+#'
+#'labels <- system.file('extdata', 'testlabels.rds', package = 'methylClass')
+#'labels <- readRDS(labels)
+#'
+#'res <- makecv(y = labels, cv.fold = 5, seednum = 1234, normalcv = FALSE)
 #'@export
 makecv <- function(y,
                    cv.fold = 5,
@@ -215,6 +222,18 @@ makecv <- function(y,
 #'  and testing sample indexes of that loop in it. The absolute directory of
 #'  the folder can be transferred to the function \code{maincv} to construct
 #'  and evaluate the model performance via cross validation.
+#'@examples
+#'library(methylClass)
+#'
+#'labels <- system.file('extdata', 'testlabels.rds', package = 'methylClass')
+#'labels <- readRDS(labels)
+#'
+#'betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+#'betas <- readRDS(betas)
+#'
+#'cvdata(y = labels, betas = betas, topfeaturenumber = 10000, n.cv.folds = 5,
+#'  seed = 1234, normalcv = FALSE, out.path = 'betas.train.test.filtered',
+#'  out.fname.prefix = 'betas')
 #'@export
 cvdata <- function(y = NULL,
                    betas = NULL,

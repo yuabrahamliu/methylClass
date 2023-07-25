@@ -2060,6 +2060,14 @@ diffsites <- function(dat,
 #'@return Will return a list containing the beta value matrix only with the
 #'  selected features, and also containing a vector recording the names of the
 #'  selected features.
+#'@examples
+#'library(methylClass)
+#'
+#'betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+#'betas <- readRDS(betas)
+#'
+#'res <- mainfeature(betas.. = betas, subset.CpGs = 10000, cores = 4, 
+#'  topfeaturenumber = 50000)
 #'@export
 mainfeature <- function(y.. = NULL,
                         betas.. = NULL,
@@ -2577,6 +2585,24 @@ mainfeature <- function(y.. = NULL,
 #'  model object, the training and testing sample indexes of that loop, etc in
 #'  it. These results are the results from the raw model and are needed by the
 #'  calibration step conducted by the function \code{maincalibration}.
+#'@examples
+#'library(methylClass)
+#'
+#'labels <- system.file('extdata', 'testlabels.rds', package = 'methylClass')
+#'labels <- readRDS(labels)
+#'
+#'betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+#'betas <- readRDS(betas)
+#'
+#'maincv(y.. = labels, betas.. = betas, subset.CpGs = 10000, n.cv.folds = 5, 
+#'  normalcv = TRUE, out.path = 'RFCV', out.fname = 'CVfold', 
+#'  method = 'RF', seed = 1234, cores = 4)
+#'  
+#'\dontrun{
+#'maincv(y.. = labels, betas.. = betas, subset.CpGs = 10000, n.cv.folds = 5, 
+#'  normalcv = TRUE, out.path = 'eSVMCV', out.fname = 'CVfold', 
+#'  method = 'eSVM', seed = 1234, cores = 4)
+#'}
 #'@export
 maincv <- function(y.. = NULL,
                    betas.. = NULL,
@@ -3643,6 +3669,32 @@ sub_performance_evaluator <- function(probs.l,
 #'  and the raw + ridge model. In addition, the calibration score matrixes of
 #'  the cross validation loops will be saved in the path set by the parameter
 #'  \code{out.path}.
+#'@examples
+#'library(methylClass)
+#'
+#'labels <- system.file('extdata', 'testlabels.rds', package = 'methylClass')
+#'labels <- readRDS(labels)
+#'
+#'betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+#'betas <- readRDS(betas)
+#'
+#'maincv(y.. = labels, betas.. = betas, subset.CpGs = 10000, n.cv.folds = 5, 
+#'  normalcv = TRUE, out.path = 'RFCV', out.fname = 'CVfold', 
+#'  method = 'RF', seed = 1234, cores = 4)
+#'
+#'RFres <- maincalibration(y.. = labels, load.path = 'RFCV', 
+#'  load.fname = 'CVfold', normalcv = TRUE, algorithm = 'RF', 
+#'  setseed = 1234)
+#'  
+#'\dontrun{
+#'maincv(y.. = labels, betas.. = betas, subset.CpGs = 10000, n.cv.folds = 5, 
+#'  normalcv = TRUE, out.path = 'eSVMCV', out.fname = 'CVfold', 
+#'  method = 'eSVM', seed = 1234, cores = 10)
+#'  
+#'eSVMres <- maincalibration(y.. = labels, load.path = 'eSVMCV', 
+#'  load.fname = 'CVfold', normalcv = TRUE, algorithm = 'eSVM', 
+#'  setseed = 1234)
+#'}
 #'@export
 maincalibration <- function(out.path = "calibration/",
                             out.fname = "probsCVfold",
@@ -4476,6 +4528,28 @@ maincalibration <- function(out.path = "calibration/",
 #'@return Will return a list containing the trained raw model and calibration
 #'  models. In addition, the raw model and calibration score matrixes on the
 #'  training data are also included in this list.
+#'@examples
+#'library(methylClass)
+#'
+#'labels <- system.file('extdata', 'testlabels.rds', package = 'methylClass')
+#'labels <- readRDS(labels)
+#'
+#'betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+#'betas <- readRDS(betas)
+#'
+#'RFmods <- maintrain(y.. = labels, betas.. = betas, subset.CpGs = 10000, 
+#'  seed = 1234, method = 'RF', calibrationmethod = c('LR', 'FLR', 'MR'), 
+#'  cores = 4)
+#'  
+#'summary(RFmods)
+#'
+#'\dontrun{
+#'eSVMmods <- maintrain(y.. = labels, betas.. = betas, subset.CpGs = 10000, 
+#'  seed = 1234, method = 'eSVM', calibrationmethod = c('LR', 'FLR', 'MR'), 
+#'  cores = 10)
+#'  
+#'summary(eSVMmods)
+#'}
 #'@export
 maintrain <- function(y.. = NULL,
                       betas.. = NULL,
@@ -5240,12 +5314,35 @@ maintrain <- function(y.. = NULL,
 #'  with the base learner neural network model files saved there when eNeural
 #'  model is trained and the path of this folder need to be provided to the
 #'  parameter \code{baselearnerpath} here to predict the labels using eNeural.
-#'
 #'@return Will return a list containing the score matrix for the new samples,
 #'  and the final predicted labels in a vector. These results from the raw
 #'  model will always be contained in the list, and if a calibration model is
 #'  also provided to the function, the probability matrix and the labels from
 #'  the calibration model will also be in the list.
+#'@examples
+#'library(methylClass)
+#'
+#'labels <- system.file('extdata', 'testlabels.rds', package = 'methylClass')
+#'labels <- readRDS(labels)
+#'
+#'betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+#'betas <- readRDS(betas)
+#'
+#'RFmods <- maintrain(y.. = labels, betas.. = betas, subset.CpGs = 10000, 
+#'  seed = 1234, method = 'RF', calibrationmethod = c('LR', 'FLR', 'MR'), 
+#'  cores = 4)
+#'
+#'RFpres <- mainpredict(newdat = betas, mod = RFmods$mod, 
+#'  calibratemod = RFmods$glmnet.calfit, y = NULL, cores = 1)
+#'
+#'\dontrun{
+#'eSVMmods <- maintrain(y.. = labels, betas.. = betas, subset.CpGs = 10000, 
+#'  seed = 1234, method = 'eSVM', calibrationmethod = c('LR', 'FLR', 'MR'), 
+#'  cores = 10)
+#'  
+#'eSVMpres <- mainpredict(newdat = betas, mod = eSVMmods$mod, 
+#'  calibratemod = eSVMmods$glmnet.calfit, y = NULL, cores = 1)
+#'}
 #'@export
 mainpredict <- function(newdat,
                         mod,

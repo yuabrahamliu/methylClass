@@ -104,6 +104,18 @@
 #'  different DBSCAN clusters and with the ones out of the clusters removed,
 #'  and also a data frame annotating the cluster IDs of these samples will be
 #'  returned with the beta value matrix.
+#'@examples
+#'library(methylClass)
+#'
+#'labels <- system.file('extdata', 'testlabels.rds', package = 'methylClass')
+#'labels <- readRDS(labels)
+#'
+#'betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+#'betas <- readRDS(betas)
+#'
+#'dbscanres <- clustering(y = labels, betas = betas, subset.CpGs = 10000, 
+#'  seed = 1234, cores = 4, topfeaturenumber = 50000, 
+#'  eps = 3.5, minPts = 5, legendcolnum = 1)
 #'@export
 clustering <- function(y = NULL,
                        betas,
@@ -525,6 +537,20 @@ plotdataorganize <- function(oridat,
 #'  indicates after attributing them into different gene regions, including
 #'  the percentage of the probes in each region, their Fisher's exact p-value,
 #'  etc. Also, the corresponding barplots will be generated.
+#'@examples
+#'library(methylClass)
+#'
+#'betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+#'betas <- readRDS(betas)
+#'
+#'top1k <- mainfeature(betas.. = betas, subset.CpGs = 1000, cores = 4, 
+#'  topfeaturenumber = 50000)
+#'  
+#'top1klist <- list(top1k = top1k$features)
+#'
+#'enrichres <- multipledistribution(platform = 'EPIC', 
+#'  allprobes = colnames(betas), targetprobelist = top1klist, 
+#'  plotbackground = FALSE, removedup = TRUE)
 #'@export
 multipledistribution <- function(platform = "EPIC",
                                  allprobes = NULL,
@@ -971,6 +997,26 @@ plotvis <- function(coordat,
 #'  \code{pkg_resources}, \code{scipy}, and \code{pynndescent}.
 #'@return A list with the J-SNE and J-UMAP coordinates for the input samples,
 #'  with corresponding scatter plots generated
+#'@examples
+#'library(methylClass)
+#'
+#'labels <- system.file('extdata', 'testlabels.rds', package = 'methylClass')
+#'labels <- readRDS(labels)
+#'
+#'betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+#'betas <- readRDS(betas)
+#'
+#'top1k <- mainfeature(betas.. = betas, subset.CpGs = 1000, cores = 4, 
+#'  topfeaturenumber = 50000)
+#'
+#'omicslist = list(methyl = betas[,top1k$features])
+#'
+#'library(reticulate)
+#'
+#'pypath <- py_exe()
+#'
+#'jvisres <- mainJvisR(datlist = omicslist, labels = labels, 
+#'  random_state = 1234, pythonpath = pypath)
 #'@export
 mainJvisR <- function(datlist,
                       labels = NULL,
@@ -1096,6 +1142,14 @@ summaryfeature <- function(dat, featurecolidx){
 #'  probes will be discarded, so that the beta values of all the genes are
 #'  averaged only from their uniquely related probes. Default is FALSE.
 #'@return A matrix recording the summarized gene beta values for samples.
+#'@examples
+#'library(methylClass)
+#'
+#'betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+#'betas <- readRDS(betas)
+#'
+#'genebetas <- togene(betadat = t(betas), platform = 'EPIC', 
+#'  group450k850k = 'TSS200', includemultimatch = FALSE)
 #'@export
 togene <- function(betadat,
                    platform = 'EPIC',
@@ -1330,6 +1384,14 @@ coverredtss <- function(fragments, tssradius = NULL){
 #'  and other information of the DMRs and probes. The slot "dmrgenemapping" is
 #'  a data.frame recording the genes whose TSS regions are covered by each
 #'  DMR.
+#'@examples
+#'library(methylClass)
+#'
+#'betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+#'betas <- readRDS(betas)
+#'
+#'DMRbetas <- toDMR(betadat = t(betas), platform = 'EPIC', maxgap = 300,
+#'  TSSradius = 1500)
 #'@export
 toDMR <- function(betadat,
                   platform = 'EPIC',
@@ -1596,6 +1658,29 @@ clusterscreen <- function(confmatrix = confmat, cutoff = 0.8){
 #'@return Different DBSCAN parameters will generate different clusters so that
 #'  after the filtering, their kept clusters and samples will be different.
 #'  This function will return the parameters with the most samples reserved.
+#'@examples
+#'library(methylClass)
+#'
+#'labels <- system.file('extdata', 'testlabels.rds', package = 'methylClass')
+#'labels <- readRDS(labels)
+#'
+#'betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+#'betas <- readRDS(betas)
+#'
+#'top1k <- mainfeature(betas.. = betas, subset.CpGs = 1000, cores = 4, 
+#'  topfeaturenumber = 50000)
+#'
+#'omicslist = list(methyl = betas[,top1k$features])
+#'
+#'library(reticulate)
+#'
+#'pypath <- py_exe()
+#'
+#'jvisres <- mainJvisR(datlist = omicslist, labels = labels, 
+#'  random_state = 1234, pythonpath = pypath)
+#'
+#'optparams <- clustergrid(tsnedat = jvisres$JSNE, epses = seq(0.25, 5, 0.25), 
+#'  minPtses = seq(2, 21, 1), cutoff = 0.8, classlabels = labels)
 #'@export
 clustergrid <- function(tsnedat,
                         epses = seq(0.25, 5, 0.25),
@@ -1674,6 +1759,32 @@ clustergrid <- function(tsnedat,
 #'  contains the reserved sample names after the filtering. Another slot named
 #'  "dbscanlabels" contains the DBSCAN cluster IDs for all the samples. The
 #'  slot named "classlabels" contains the class labels of all the samples.
+#'@examples
+#'library(methylClass)
+#'
+#'labels <- system.file('extdata', 'testlabels.rds', package = 'methylClass')
+#'labels <- readRDS(labels)
+#'
+#'betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+#'betas <- readRDS(betas)
+#'
+#'top1k <- mainfeature(betas.. = betas, subset.CpGs = 1000, cores = 4, 
+#'  topfeaturenumber = 50000)
+#'
+#'omicslist = list(methyl = betas[,top1k$features])
+#'
+#'library(reticulate)
+#'
+#'pypath <- py_exe()
+#'
+#'jvisres <- mainJvisR(datlist = omicslist, labels = labels, 
+#'  random_state = 1234, pythonpath = pypath)
+#'
+#'optparams <- clustergrid(tsnedat = jvisres$JSNE, epses = seq(0.25, 5, 0.25), 
+#'  minPtses = seq(2, 21, 1), cutoff = 0.75, classlabels = labels)
+#'  
+#'clusterres <- labelclusters(tsnedat = jvisres$JSNE, classlabels = labels, 
+#'  eps = optparams[['eps']], minPts = optparams[['minPts']], cutoff = 0.75)
 #'@export
 labelclusters <- function(tsnedat,
                           classlabels,
@@ -1807,6 +1918,18 @@ createnames <- function(rawnames){
 #'@return A list with 2 slots. The slot named "dat" is a matrix containing all
 #'  the samples after the upsampling process. The other slot named "labels" is
 #'  a vector with the corresponding class labels.
+#'@examples
+#'library(methylClass)
+#'
+#'labels <- system.file('extdata', 'testlabels.rds', package = 'methylClass')
+#'labels <- readRDS(labels)
+#'
+#'betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+#'betas <- readRDS(betas)
+#'
+#'upsampledbetas <- balancesampling(dat = betas, labels = labels, 
+#'  topfeaturenumber = NULL, cutoff = 100, downsampling = FALSE, 
+#'  sampleseed = 1234, k = 5, adjustbetas = TRUE)
 #'@export
 balancesampling <- function(dat,
                             labels,
