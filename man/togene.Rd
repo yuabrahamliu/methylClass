@@ -42,3 +42,12 @@ A matrix recording the summarized gene beta values for samples.
 Summarize the methylation beta values of probes to genes by averaging the
 probes located closely to the TSS of a gene.
 }
+\examples{
+library(methylClass)
+
+betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+betas <- readRDS(betas)
+
+genebetas <- togene(betadat = t(betas), platform = 'EPIC', 
+ group450k850k = 'TSS200', includemultimatch = FALSE)
+}

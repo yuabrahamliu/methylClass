@@ -82,3 +82,16 @@ and evaluate the model performance via cross validation.
 Generate the training and testing data matrices for all the cross validation
 loops.
 }
+\examples{
+library(methylClass)
+
+labels <- system.file('extdata', 'testlabels.rds', package = 'methylClass')
+labels <- readRDS(labels)
+
+betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+betas <- readRDS(betas)
+
+cvdata(y = labels, betas = betas, topfeaturenumber = 10000, n.cv.folds = 5,
+ seed = 1234, normalcv = FALSE, out.path = 'betas.train.test.filtered',
+ out.fname.prefix = 'betas')
+}

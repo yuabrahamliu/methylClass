@@ -143,3 +143,12 @@ selected features.
 Select features for classification model construction via selecting the top
 variable features, using \code{SCMER}, or \code{limma}.
 }
+\examples{
+library(methylClass)
+
+betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+betas <- readRDS(betas)
+
+res <- mainfeature(betas.. = betas, subset.CpGs = 10000, cores = 4, 
+ topfeaturenumber = 50000)
+}

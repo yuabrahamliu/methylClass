@@ -39,3 +39,12 @@ DMR.
 Cluster the probes into DNA methylation regions (DMRs) and calculate the
 beta values of the DMRs via averaging the probe beta values within them.
 }
+\examples{
+library(methylClass)
+
+betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+betas <- readRDS(betas)
+
+DMRbetas <- toDMR(betadat = t(betas), platform = 'EPIC', maxgap = 300,
+ TSSradius = 1500)
+}

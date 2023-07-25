@@ -5,7 +5,7 @@
 \title{Perform J-SNE and J-UMAP embedding on multi-omics data}
 \usage{
 mainJvisR(
-  datlist = datlist,
+  datlist,
   labels = NULL,
   n_components = 2,
   metric = "euclidean",
@@ -88,4 +88,25 @@ with corresponding scatter plots generated
 \description{
 Perform J-SNE and J-UMAP embedding on multi-omics data with scatter plot
 generated
+}
+\examples{
+library(methylClass)
+
+labels <- system.file('extdata', 'testlabels.rds', package = 'methylClass')
+labels <- readRDS(labels)
+
+betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+betas <- readRDS(betas)
+
+top1k <- mainfeature(betas.. = betas, subset.CpGs = 1000, cores = 4, 
+ topfeaturenumber = 50000)
+
+omicslist = list(methyl = betas[,top1k$features])
+
+library(reticulate)
+
+pypath <- py_exe()
+
+jvisres <- mainJvisR(datlist = omicslist, labels = labels, 
+ random_state = 1234, pythonpath = pypath)
 }

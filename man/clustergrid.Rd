@@ -34,6 +34,11 @@ with the same histological label, it will be kept, while a cluster without
 so many dominant samples will be dropped. For the dominant clusters, the
 <= 20\% minor samples in them will also be dropped. Thus, the kept clusters
 will only contain the dominant samples.}
+
+\item{classlabels}{The histological labels of the samples. Can be a vector,
+factor. Each element is a label for a sample and the element order in it
+should be the same as the sample order in the sample data provided by the
+parameter \code{tsnedat}.}
 }
 \value{
 Different DBSCAN parameters will generate different clusters so that
@@ -44,4 +49,28 @@ This function will return the parameters with the most samples reserved.
 Perform grid search across the parameters epsilon and minimum cluster points
 to find the best DBSCAN result to keep the most samples with a matching
 relationship between their histological labels and methylation clusters.
+}
+\examples{
+library(methylClass)
+
+labels <- system.file('extdata', 'testlabels.rds', package = 'methylClass')
+labels <- readRDS(labels)
+
+betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+betas <- readRDS(betas)
+
+top1k <- mainfeature(betas.. = betas, subset.CpGs = 1000, cores = 4, 
+ topfeaturenumber = 50000)
+
+omicslist = list(methyl = betas[,top1k$features])
+
+library(reticulate)
+
+pypath <- py_exe()
+
+jvisres <- mainJvisR(datlist = omicslist, labels = labels, 
+ random_state = 1234, pythonpath = pypath)
+
+optparams <- clustergrid(tsnedat = jvisres$JSNE, epses = seq(0.25, 5, 0.25), 
+ minPtses = seq(2, 21, 1), cutoff = 0.8, classlabels = labels)
 }

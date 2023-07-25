@@ -31,3 +31,11 @@ in \code{y}.
 \description{
 Create a cross validation structure and assign samples to different loops
 }
+\examples{
+library(methylClass)
+
+labels <- system.file('extdata', 'testlabels.rds', package = 'methylClass')
+labels <- readRDS(labels)
+
+res <- makecv(y = labels, cv.fold = 5, seednum = 1234, normalcv = FALSE)
+}

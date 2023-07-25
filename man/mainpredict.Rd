@@ -55,3 +55,28 @@ the calibration model will also be in the list.
 \description{
 Predict sample labels using the trained model
 }
+\examples{
+library(methylClass)
+
+labels <- system.file('extdata', 'testlabels.rds', package = 'methylClass')
+labels <- readRDS(labels)
+
+betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+betas <- readRDS(betas)
+
+RFmods <- maintrain(y.. = labels, betas.. = betas, subset.CpGs = 10000, 
+ seed = 1234, method = 'RF', calibrationmethod = c('LR', 'FLR', 'MR'), 
+ cores = 4)
+
+RFpres <- mainpredict(newdat = betas, mod = RFmods$mod, 
+ calibratemod = RFmods$glmnet.calfit, y = NULL, cores = 1)
+
+\dontrun{
+eSVMmods <- maintrain(y.. = labels, betas.. = betas, subset.CpGs = 10000, 
+ seed = 1234, method = 'eSVM', calibrationmethod = c('LR', 'FLR', 'MR'), 
+ cores = 10)
+ 
+eSVMpres <- mainpredict(newdat = betas, mod = eSVMmods$mod, 
+ calibratemod = eSVMmods$glmnet.calfit, y = NULL, cores = 1)
+}
+}

@@ -67,3 +67,18 @@ etc. Also, the corresponding barplots will be generated.
 Attribute methylation probes to different genomic regions and show their
 distribution patterns
 }
+\examples{
+library(methylClass)
+
+betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+betas <- readRDS(betas)
+
+top1k <- mainfeature(betas.. = betas, subset.CpGs = 1000, cores = 4, 
+ topfeaturenumber = 50000)
+ 
+top1klist <- list(top1k = top1k$features)
+
+enrichres <- multipledistribution(platform = 'EPIC', 
+ allprobes = colnames(betas), targetprobelist = top1klist, 
+ plotbackground = FALSE, removedup = TRUE)
+}

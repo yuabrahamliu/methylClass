@@ -486,3 +486,22 @@ calibration step conducted by the function \code{maincalibration}.
 \description{
 Cross validation on model performance without calibration.
 }
+\examples{
+library(methylClass)
+
+labels <- system.file('extdata', 'testlabels.rds', package = 'methylClass')
+labels <- readRDS(labels)
+
+betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+betas <- readRDS(betas)
+
+maincv(y.. = labels, betas.. = betas, subset.CpGs = 10000, n.cv.folds = 5, 
+ normalcv = TRUE, out.path = 'RFCV', out.fname = 'CVfold', 
+ method = 'RF', seed = 1234, cores = 4)
+ 
+\dontrun{
+maincv(y.. = labels, betas.. = betas, subset.CpGs = 10000, n.cv.folds = 5, 
+ normalcv = TRUE, out.path = 'eSVMCV', out.fname = 'CVfold', 
+ method = 'eSVM', seed = 1234, cores = 4)
+}
+}

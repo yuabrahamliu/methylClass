@@ -78,3 +78,30 @@ the cross validation loops will be saved in the path set by the parameter
 Evaluate the cross validation performance of various machine learning models
 after calibration.
 }
+\examples{
+library(methylClass)
+
+labels <- system.file('extdata', 'testlabels.rds', package = 'methylClass')
+labels <- readRDS(labels)
+
+betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+betas <- readRDS(betas)
+
+maincv(y.. = labels, betas.. = betas, subset.CpGs = 10000, n.cv.folds = 5, 
+ normalcv = TRUE, out.path = 'RFCV', out.fname = 'CVfold', 
+ method = 'RF', seed = 1234, cores = 4)
+
+RFres <- maincalibration(y.. = labels, load.path = 'RFCV', 
+ load.fname = 'CVfold', normalcv = TRUE, algorithm = 'RF', 
+ setseed = 1234)
+ 
+\dontrun{
+maincv(y.. = labels, betas.. = betas, subset.CpGs = 10000, n.cv.folds = 5, 
+ normalcv = TRUE, out.path = 'eSVMCV', out.fname = 'CVfold', 
+ method = 'eSVM', seed = 1234, cores = 10)
+ 
+eSVMres <- maincalibration(y.. = labels, load.path = 'eSVMCV', 
+ load.fname = 'CVfold', normalcv = TRUE, algorithm = 'eSVM', 
+ setseed = 1234)
+}
+}

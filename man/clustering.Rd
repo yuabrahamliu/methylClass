@@ -149,3 +149,16 @@ returned with the beta value matrix.
 Perform density-based spatial clustering of applications with noise (DBSCAN)
 on beta value matrix
 }
+\examples{
+library(methylClass)
+
+labels <- system.file('extdata', 'testlabels.rds', package = 'methylClass')
+labels <- readRDS(labels)
+
+betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+betas <- readRDS(betas)
+
+dbscanres <- clustering(y = labels, betas = betas, subset.CpGs = 10000, 
+ seed = 1234, cores = 4, topfeaturenumber = 50000, 
+ eps = 3.5, minPts = 5, legendcolnum = 1)
+}

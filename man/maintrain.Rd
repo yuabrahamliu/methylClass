@@ -78,8 +78,9 @@ will load it and use it as the sample true labels.}
 and each column is one feature. It can also be set as NULL, and in this
 case, the function will read the data via the directory \code{betas.path}.
 The absolute path of the file of these data should be provided by the
-parameter \code{betas.path}.
-@param betas.path If the parameter \code{betas..} is NULL, this parameter is
+parameter \code{betas.path}.}
+
+\item{betas.path}{If the parameter \code{betas..} is NULL, this parameter is
 necessary to provide the file path of the betas matrix data, so that the
 function will read the data from this path. It should be an absolute path
 string, and the file should be an .rds file.}
@@ -91,7 +92,37 @@ It can also be the string "limma", so that \code{limma} will be used to
 select the significantly differential features between a sample class and
 all other samples. The differential ones should fulfill the condition that
 their adjusted p-value < \code{padjcut} (default is 0.05), and the betas
-value difference between the sample class and all other samples should be\code{xcutoff}, or < -\code{xcutoff} (default value is 0.1). After thedifferential features for each class have been found by \code{limma}, allof them will be mixed together and ordered by their adjusted p-value andthe absolute of beta value difference, and then the top \code{cutnum} ones(default number is 10000) will be selected and as the final features. Inaddition, if there are any confounding factors in the dataset need to beremoved, they can be provided by the parameter \code{confoundings} and\code{limma} will select the features after these confoundings have beenadjusted. The parameter \code{confoundings} should be provided as a vectorwith the confounding names in the meta data (the meta data are provided bythe parameter \code{anno}) as elements. As to \code{subset.CpGs}, it canalso be the string "SCMER", and then \code{SCMER} will be used to selectfeatures from the data. In this case, other parameters shoul}
+value difference between the sample class and all other samples should be
+\> \code{xcutoff}, or < -\code{xcutoff} (default value is 0.1). After the
+differential features for each class have been found by \code{limma}, all
+of them will be mixed together and ordered by their adjusted p-value and
+the absolute of beta value difference, and then the top \code{cutnum} ones
+(default number is 10000) will be selected and as the final features. In
+addition, if there are any confounding factors in the dataset need to be
+removed, they can be provided by the parameter \code{confoundings} and
+\code{limma} will select the features after these confoundings have been
+adjusted. The parameter \code{confoundings} should be provided as a vector
+with the confounding names in the meta data (the meta data are provided by
+the parameter \code{anno}) as elements. As to \code{subset.CpGs}, it can
+also be the string "SCMER", and then \code{SCMER} will be used to select
+features from the data. In this case, other parameters should be set well,
+including \code{lasso}, \code{ridge}, \code{n_pcs}, \code{perplexity},
+\code{savefigures}, \code{pythonpath} and \code{topfeaturenumber}. Because
+\code{SCMER} is a method to select features able to preserve the original
+manifold structure of the data after its feature selection by elastic net,
+most of these parameters are used to config the manifold (\code{n_pcs}
+and \code{perplexity}) and elastic net (\code{lasso}, and \code{ridge}),
+while another important one is \code{pythonpath} that is used to tell the
+function the absolute path of \code{Python} you want to run \code{SCMER}
+because this method also depends on \code{Python}. In addition, because
+\code{limma} and \code{SCMER} can be time-consuming if running on a large
+number of candidate features, it is recommended to do a prescreen before
+running them, and the parameter \code{topfeaturenumber} can be set as a
+numeric value such as 50000, so that the top 50000 most variable features
+will be selected, and the top variable, \code{limma}, or the \code{SCMER}
+features can be selected further on the prescreened data. The parameter
+\code{subset.CpGs} can also be set as NULL, so that feature selection will
+not be performed before the model construction.}
 
 \item{seed}{Some process performed by this function will need a seed number
 to fix the random process, such as the random sampling steps of some models
@@ -393,4 +424,27 @@ training data are also included in this list.
 }
 \description{
 Train classification models without or with various calibraion methods
+}
+\examples{
+library(methylClass)
+
+labels <- system.file('extdata', 'testlabels.rds', package = 'methylClass')
+labels <- readRDS(labels)
+
+betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+betas <- readRDS(betas)
+
+RFmods <- maintrain(y.. = labels, betas.. = betas, subset.CpGs = 10000, 
+ seed = 1234, method = 'RF', calibrationmethod = c('LR', 'FLR', 'MR'), 
+ cores = 4)
+ 
+summary(RFmods)
+
+\dontrun{
+eSVMmods <- maintrain(y.. = labels, betas.. = betas, subset.CpGs = 10000, 
+ seed = 1234, method = 'eSVM', calibrationmethod = c('LR', 'FLR', 'MR'), 
+ cores = 10)
+ 
+summary(eSVMmods)
+}
 }

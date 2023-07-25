@@ -57,3 +57,16 @@ a vector with the corresponding class labels.
 Perform upsampling on small sample classes with SMOTE (Synthetic Minority
 Over-sampling Technique).
 }
+\examples{
+library(methylClass)
+
+labels <- system.file('extdata', 'testlabels.rds', package = 'methylClass')
+labels <- readRDS(labels)
+
+betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+betas <- readRDS(betas)
+
+upsampledbetas <- balancesampling(dat = betas, labels = labels, 
+ topfeaturenumber = NULL, cutoff = 100, downsampling = FALSE, 
+ sampleseed = 1234, k = 5, adjustbetas = TRUE)
+}

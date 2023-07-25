@@ -39,3 +39,30 @@ slot named "classlabels" contains the class labels of all the samples.
 Integrate the sample labels and the DBSCAN clustering results and keep the
 samples with a matching relationship between them.
 }
+\examples{
+library(methylClass)
+
+labels <- system.file('extdata', 'testlabels.rds', package = 'methylClass')
+labels <- readRDS(labels)
+
+betas <- system.file('extdata', 'testbetas.rds', package = 'methylClass')
+betas <- readRDS(betas)
+
+top1k <- mainfeature(betas.. = betas, subset.CpGs = 1000, cores = 4, 
+ topfeaturenumber = 50000)
+
+omicslist = list(methyl = betas[,top1k$features])
+
+library(reticulate)
+
+pypath <- py_exe()
+
+jvisres <- mainJvisR(datlist = omicslist, labels = labels, 
+ random_state = 1234, pythonpath = pypath)
+
+optparams <- clustergrid(tsnedat = jvisres$JSNE, epses = seq(0.25, 5, 0.25), 
+ minPtses = seq(2, 21, 1), cutoff = 0.75, classlabels = labels)
+ 
+clusterres <- labelclusters(tsnedat = jvisres$JSNE, classlabels = labels, 
+ eps = optparams[['eps']], minPts = optparams[['minPts']], cutoff = 0.75)
+}
