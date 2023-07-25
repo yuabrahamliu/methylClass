@@ -4192,7 +4192,7 @@ maincalibration <- function(out.path = "calibration/",
 #'  case, the function will read the data via the directory \code{betas.path}.
 #'  The absolute path of the file of these data should be provided by the
 #'  parameter \code{betas.path}.
-#'  @param betas.path If the parameter \code{betas..} is NULL, this parameter is
+#'@param betas.path If the parameter \code{betas..} is NULL, this parameter is
 #'  necessary to provide the file path of the betas matrix data, so that the
 #'  function will read the data from this path. It should be an absolute path
 #'  string, and the file should be an .rds file.
@@ -4204,7 +4204,7 @@ maincalibration <- function(out.path = "calibration/",
 #'  all other samples. The differential ones should fulfill the condition that
 #'  their adjusted p-value < \code{padjcut} (default is 0.05), and the betas
 #'  value difference between the sample class and all other samples should be
-#'  > \code{xcutoff}, or < -\code{xcutoff} (default value is 0.1). After the
+#'  \> \code{xcutoff}, or < -\code{xcutoff} (default value is 0.1). After the
 #'  differential features for each class have been found by \code{limma}, all
 #'  of them will be mixed together and ordered by their adjusted p-value and
 #'  the absolute of beta value difference, and then the top \code{cutnum} ones
