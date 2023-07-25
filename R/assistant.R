@@ -1740,6 +1740,41 @@ labelclusters <- function(tsnedat,
 
 }
 
+createnames <- function(rawnames){
+  
+  reversenames <- FALSE
+  if(sum(grepl(pattern = '-', x = rawnames)) > 0){
+    
+    rawnames <- gsub(pattern = '-', replacement = '___', x = rawnames)
+    reversenames <- TRUE
+  }
+  
+  
+  newnames <- make.names(names = rawnames, unique = TRUE)
+  
+  
+  newnames[newnames %in% rawnames] <- ''
+  
+  
+  suffix <- gsub(pattern = '^.*\\.', replacement = '', x = newnames)
+  
+  
+  suffix <- gsub(pattern = '^X[0-9].*', replacement = '', x = suffix)
+  
+  
+  suffix[suffix %in% rawnames] <- ''
+  suffix <- paste0('.', suffix)
+  suffix[suffix == '.'] <- ''
+  newnames <- paste0(rawnames, suffix)
+  
+  if(reversenames == TRUE){
+    newnames <- gsub(pattern = '___', replacement = '-', x = newnames)
+  }
+  
+  return(newnames)
+  
+}
+
 #'Perform upsampling with SMOTE
 #'
 #'Perform upsampling on small sample classes with SMOTE (Synthetic Minority
