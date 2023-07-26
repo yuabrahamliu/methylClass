@@ -92,8 +92,8 @@ It can also be the string "limma", so that \code{limma} will be used to
 select the significantly differential features between a sample class and
 all other samples. The differential ones should fulfill the condition that
 their adjusted p-value < \code{padjcut} (default is 0.05), and the betas
-value difference between the sample class and all other samples should be
-\> \code{xcutoff}, or < -\code{xcutoff} (default value is 0.1). After the
+value difference between the sample class and other samples should be >
+\code{xcutoff}, or < -\code{xcutoff} (default value is 0.1). After the
 differential features for each class have been found by \code{limma}, all
 of them will be mixed together and ordered by their adjusted p-value and
 the absolute of beta value difference, and then the top \code{cutnum} ones
