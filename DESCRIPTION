@@ -15,7 +15,7 @@ Description: methylClass is an R package for methylation-based classification.
 	selection methods, such as SCMER, are included in the package to improve 
 	the classification. Furthermore, because methylation data can be converted 
 	to other types of omics, such as copy number variation (CNV) data, we also 
-	provide several functions for multi-omics study. 
+	provide several functions for multi-omics studies. 
 License: use_mit_license()
 Encoding: UTF-8
 LazyData: true
