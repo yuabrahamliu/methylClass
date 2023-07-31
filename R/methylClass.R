@@ -11,20 +11,20 @@
 #'  improve the classification. Furthermore, we also provide functions for 
 #'  multi-omics studies. 
 #'@section methylClass functions:
-#'  balancesampling
-#'  clustergrid
-#'  clustering
-#'  cvdata
-#'  labelclusters
-#'  mainJvisR
-#'  maincalibration
-#'  maincv
-#'  mainfeature
-#'  mainpredict
-#'  maintrain
-#'  makecv
-#'  multipledistribution
-#'  toDMR
+#'  balancesampling, 
+#'  clustergrid, 
+#'  clustering, 
+#'  cvdata, 
+#'  labelclusters, 
+#'  mainJvisR, 
+#'  maincalibration, 
+#'  maincv, 
+#'  mainfeature, 
+#'  mainpredict, 
+#'  maintrain, 
+#'  makecv, 
+#'  multipledistribution, 
+#'  toDMR, 
 #'  togene
 #'@docType package
 #'@name methylClass
