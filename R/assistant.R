@@ -2032,13 +2032,13 @@ balancesampling <- function(dat,
         zetas <- runif(cutoff - length(classsamples))
 
         synthesizeddat <- lapply(X = 1:length(zetas),
-                                 FUN = function(x){subdat[sub$sampleid[1],] + zetas[x]*difference})
+                                 FUN = function(x){subdat[classsamples,] + zetas[x]*difference})
 
-        names(synthesizeddat) <- rep(sub$sampleid[1], length(synthesizeddat))
+        names(synthesizeddat) <- rep(classsamples, length(synthesizeddat))
 
         synthesizeddat <- do.call(rbind, synthesizeddat)
 
-        subdat <- rbind(subdat[sub$sampleid[1], , drop = FALSE], synthesizeddat)
+        subdat <- rbind(subdat[classsamples, , drop = FALSE], synthesizeddat)
 
         row.names(subdat) <- createnames(rawnames = row.names(subdat))
 
