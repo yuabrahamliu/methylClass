@@ -1931,162 +1931,177 @@ createnames <- function(rawnames){
 #'  topfeaturenumber = NULL, cutoff = 100, downsampling = FALSE, 
 #'  sampleseed = 1234, k = 5, adjustbetas = TRUE)
 #'@export
-balancesampling <- function(dat,
-                            labels,
-                            topfeaturenumber = 50000,
-                            cutoff = 10,
-                            downsampling = FALSE,
-                            sampleseed = 1234,
-                            k = 5,
+balancesampling <- function(dat, 
+                            labels, 
+                            topfeaturenumber = 50000, 
+                            cutoff = 10, 
+                            downsampling = FALSE, 
+                            sampleseed = 1234, 
+                            k = 5, 
                             adjustbetas = TRUE){
-
+  
+  labellevels <- NULL
+  
+  labelordered <- FALSE
+  
+  if(is.factor(labels)){
+    labellevels <- levels(labels)
+    
+    labelordered <- is.ordered(labels)
+  }
+  
   dat <- topvarfeatures(betasmat = dat, topfeaturenumber = topfeaturenumber)
-
-  classsizes <- table(labels)
-
+  
+  classsizes <- table(as.character(labels))
+  
   names(labels) <- row.names(dat)
-
+  
   i <- 1
   for(i in 1:length(classsizes)){
-
+    
     classname <- names(classsizes)[i]
-
+    
     classsamples <- names(labels)[labels == classname]
-
+    
     if(length(classsamples) > cutoff){
-
+      
       if(downsampling == TRUE){
-
+        
         set.seed(sampleseed + i - 1)
         subsamples <- sample(x = classsamples, size = cutoff, replace = FALSE)
         sublabels <- labels[subsamples]
         subdat <- dat[subsamples, , drop = FALSE]
-
+        
       }else{
-
+        
         subsamples <- classsamples
         sublabels <- labels[subsamples]
         subdat <- dat[subsamples, , drop = FALSE]
-
+        
       }
-
+      
     }else if(length(classsamples) < cutoff){
-
+      
       if(length(classsamples) > 1){
-
+        
         subdat <- dat[classsamples, , drop = FALSE]
-
+        
         knnres <- dbscan::kNN(x = subdat, k = min(k, nrow(subdat) - 1))
         knnres <- knnres$id
         knnresidx <- seq(1, nrow(knnres)*ncol(knnres), by = 1)
-        knnresidxmat <- matrix(data = knnresidx,
-                               nrow = nrow(knnres),
+        knnresidxmat <- matrix(data = knnresidx, 
+                               nrow = nrow(knnres), 
                                byrow = FALSE)
         row.names(knnresidxmat) <- 1:nrow(knnresidxmat)
         colnames(knnresidxmat) <- 1:ncol(knnresidxmat)
-
-
-
+        
+        
+        
         set.seed(sampleseed + i - 1)
-
+        
         sampledidx <- sample(x = knnresidx, size = cutoff - length(classsamples), replace = TRUE)
-
-        smoteidx <- do.call(rbind,
-                            lapply(X = sampledidx,
+        
+        smoteidx <- do.call(rbind, 
+                            lapply(X = sampledidx, 
                                    FUN = function(x){which(knnresidxmat == x, arr.ind = TRUE)}))
         row.names(smoteidx) <- 1:nrow(smoteidx)
-
+        
         set.seed(sampleseed + i - 1)
         zetas <- runif(nrow(smoteidx))
-
-
-        synthesizeddat <- lapply(X = seq(1:nrow(smoteidx)),
-                                 FUN = function(x){subdat[row.names(knnres)[smoteidx[x, 1]],] +
-                                     zetas[x]*(subdat[knnres[smoteidx[x, 1], smoteidx[x, 2]],] -
+        
+        
+        synthesizeddat <- lapply(X = seq(1:nrow(smoteidx)), 
+                                 FUN = function(x){subdat[row.names(knnres)[smoteidx[x, 1]],] + 
+                                     zetas[x]*(subdat[knnres[smoteidx[x, 1], smoteidx[x, 2]],] - 
                                                  subdat[row.names(knnres)[smoteidx[x, 1]],])})
         names(synthesizeddat) <- row.names(knnres)[smoteidx[,1]]
-
+        
         synthesizeddat <- do.call(rbind, synthesizeddat)
-
-
+        
+        
         subdat <- rbind(subdat, synthesizeddat)
-
+        
         row.names(subdat) <- createnames(rawnames = row.names(subdat))
-
+        
         sublabels <- rep(classname, nrow(subdat))
         names(sublabels) <- row.names(subdat)
-
+        
       }else{
-
+        
         subdat <- dat
-
+        
         knnres <- dbscan::kNN(x = subdat, k = min(k, nrow(subdat) - 1))
-
+        
         mindist <- min(knnres$dist[knnres$dist > 0])
         mindistidx <- which(knnres$dist == mindist, arr.ind = TRUE)
-
-        difference <- subdat[knnres$id[mindistidx[1, 1], mindistidx[1, 2]],] -
+        
+        difference <- subdat[knnres$id[mindistidx[1, 1], mindistidx[1, 2]],] - 
           subdat[row.names(knnres$id)[mindistidx[1, 1]],]
-
+        
         set.seed(sampleseed + i - 1)
         zetas <- runif(cutoff - length(classsamples))
-
-        synthesizeddat <- lapply(X = 1:length(zetas),
+        
+        synthesizeddat <- lapply(X = 1:length(zetas), 
                                  FUN = function(x){subdat[classsamples,] + zetas[x]*difference})
-
+        
         names(synthesizeddat) <- rep(classsamples, length(synthesizeddat))
-
+        
         synthesizeddat <- do.call(rbind, synthesizeddat)
-
+        
         subdat <- rbind(subdat[classsamples, , drop = FALSE], synthesizeddat)
-
+        
         row.names(subdat) <- createnames(rawnames = row.names(subdat))
-
+        
         sublabels <- rep(classname, nrow(subdat))
         names(sublabels) <- row.names(subdat)
-
+        
       }
-
-
-
+      
+      
+      
     }else{
-
+      
       sublabels <- labels[classsamples]
       subdat <- dat[classsamples, , drop = FALSE]
-
+      
     }
-
+    
     if(i == 1){
-
+      
       subdats <- subdat
       sublabelses <- sublabels
-
+      
     }else{
-
+      
       subdats <- rbind(subdats, subdat)
       sublabelses <- c(sublabelses, sublabels)
-
+      
     }
-
+    
   }
-
+  
   if(adjustbetas == TRUE){
-
+    
     minvalue <- min(subdats[subdats > 0])
     maxvalue <- max(subdats[subdats < 1])
-
+    
     subdats[subdats <= 0] <- minvalue
     subdats[subdats >= 1] <- maxvalue
-
+    
   }
-
-  res <- list(dat = subdats,
+  
+  if(!is.null(labellevels)){
+    
+    sublabelses <- factor(sublabelses, levels = labellevels, ordered = labelordered)
+    
+  }
+  
+  res <- list(dat = subdats, 
               labels = sublabelses)
-
+  
   return(res)
-
+  
 }
-
 
 
 
