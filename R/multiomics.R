@@ -5341,6 +5341,7 @@ maintrain <- function(y.. = NULL,
 
 
 
+
 #'Predict sample labels
 #'
 #'Predict sample labels using the trained model
@@ -5370,6 +5371,13 @@ maintrain <- function(y.. = NULL,
 #'  with the base learner neural network model files saved there when eNeural
 #'  model is trained and the path of this folder need to be provided to the
 #'  parameter \code{baselearnerpath} here to predict the labels using eNeural.
+#'@param unseenlabelcutoff Suppose the testing dataset contains samples with 
+#'  unseen labels during the model training. This parameter can be set as a 
+#'  numeric value between 0 and 1, so if a sample's posterior probability from 
+#'  the model is less than this value, the model will predict its label as 
+#'  "unknown". Its default value is NULL, so all the samples' labels will be 
+#'  considered as already seen during the training, and all the samples will 
+#'  be assigned a definite label.
 #'@return Will return a list containing the score matrix for the new samples,
 #'  and the final predicted labels in a vector. These results from the raw
 #'  model will always be contained in the list, and if a calibration model is
@@ -5405,14 +5413,16 @@ mainpredict <- function(newdat,
                         calibratemod = NULL,
                         y = NULL,
                         cores = 1,
-                        baselearnerpath = NULL){
-
-
+                        baselearnerpath = NULL, 
+                        
+                        unseenlabelcutoff = NULL){
+  
+  
   if('importance' %in% names(mod[[1]])){
-
+    
     newdat <- newdat[, match(rownames(mod[[1]]$importance),
                              colnames(newdat))]
-
+    
     scores <- tryCatch({
       predict(mod[[1]],
               newdat,
@@ -5420,27 +5430,27 @@ mainpredict <- function(newdat,
     }, error = function(err){
       NULL
     })
-
+    
     if(is.null(scores)){
       library(randomForest)
       scores <- predict(mod[[1]],
                         newdat,
                         type = "prob")
-
+      
     }
-
-
+    
+    
   }else if('SV' %in% names(mod[[1]])){
-
+    
     scores.pred.svm.e1071.obj <- e1071:::predict.svm(object = mod[[1]],
                                                      newdata = newdat[,names(mod[[1]]$x.scale[[1]]),drop = FALSE],
                                                      probability = TRUE,
                                                      decisionValues = TRUE)
-
+    
     scores <- attr(scores.pred.svm.e1071.obj, "probabilities")
-
+    
   }else if('handle' %in% names(mod[[1]])){
-
+    
     scores.pred.xgboost.vec.test <- tryCatch({
       predict(object = mod[[1]],
               newdata = newdat,
@@ -5449,25 +5459,25 @@ mainpredict <- function(newdat,
     }, error = function(err){
       NULL
     })
-
+    
     if(is.null(scores.pred.xgboost.vec.test)){
       library(xgboost)
       scores.pred.xgboost.vec.test <- predict(object = mod[[1]],
                                               newdata = newdat,
                                               ntreelimit = mod[[1]]$best_iteration,
                                               outputmargin = FALSE)
-
+      
     }
-
+    
     scores <- matrix(scores.pred.xgboost.vec.test,
                      nrow = nrow(newdat),
                      byrow = TRUE)
-
+    
     rownames(scores) <- rownames(newdat)
     colnames(scores) <- colnames(mod[[2]])
-
+    
   }else if('glmnet.fit' %in% names(mod[[1]])){
-
+    
     scores <- tryCatch({
       predict(mod[[1]],
               newx = newdat,
@@ -5475,140 +5485,155 @@ mainpredict <- function(newdat,
     }, error = function(err){
       NULL
     })
-
+    
     if(is.null(scores)){
       library(glmnet)
       scores <- predict(mod[[1]],
                         newx = newdat,
                         type="response")[,,1]
-
-
+      
+      
     }
-
-
-
+    
+    
+    
   }else if('baselearners' %in% names(mod[[1]])){
-
+    
     if(grepl(pattern = 'Neural', x = names(mod[[1]]$baselearners)[1])){
-
+      
       scores <- eNeuralpredict(eNeuralmod = mod[[1]],
                                x = newdat,
                                cores = cores,
                                baselearnerpath = baselearnerpath)
     }else if('trainres' %in% names(mod[[1]])){
-
+      
       scores <- mod[[1]]$testres
-
+      
     }else{
-
+      
       scores <- eSVMpredict(eSVMmod = mod[[1]],
                             x = newdat,
                             cores = cores)
-
+      
     }
-
-
+    
+    
   }else{
-
+    
     scores <- eSVMpredict(eSVMmod = mod[[1]],
                           x = newdat,
                           cores = cores)
-
+    
   }
-
-
+  
+  
   rawpres <- colnames(scores)[apply(scores, 1, which.max)]
-
+  
   res <- list(scores = scores,
               rawpres = rawpres)
-
-
+  
+  #Predict unknown labels if `unseenlabelcutoff` were set
+  
+  unseenlabelpres <- unseenlabel(probmat = res$scores, 
+                                 prelabels = res$rawpres, 
+                                 unseenlabelcutoff = unseenlabelcutoff)
+  
+  res$rawpres <- unseenlabelpres$prelabels
+  
+  res$scores.scaled <- unseenlabelpres$probmat
+  
+  
   if(!is.null(calibratemod)){
-
-
+    
+    
     if('glmnet.fit' %in% names(calibratemod) &
        'lambda.1se' %in% names(calibratemod)){
-
+      
       library(glmnet)
       probs <- predict(calibratemod$glmnet.fit,
                        newx = scores,
                        type = "response",
                        s = calibratemod$lambda.1se)[,,1]
-
+      
       if(is.vector(probs)){
         classes <- names(probs)
         probs <- matrix(probs, nrow = 1)
         row.names(probs) <- row.names(newdat)
         colnames(probs) <- classes
       }
-
+      
     }else{
-
+      
       probs.l <- list()
-
+      
       for(c in 1:ncol(scores)){
-
+        
         calmod <- calibratemod[[c]]
-
+        
         diagn <- colnames(scores)[c]
         probs.l[[c]] <- subfunc_Platt_fit_testset(scores,
                                                   calmod,
                                                   diagn)
-
+        
       }
-
+      
       probs <- do.call(cbind, probs.l)
       colnames(probs) <- colnames(scores)
       rm(probs.l)
-
+      
     }
-
+    
     pres <- colnames(probs)[apply(probs, 1, which.max)]
-
+    
     res$probs <- probs
     res$pres <- pres
-
+    
+    unseenlabelpres <- unseenlabel(probmat = res$probs, 
+                                   prelabels = res$pres, 
+                                   unseenlabelcutoff = unseenlabelcutoff)
+    
+    res$pres <- unseenlabelpres$prelabels
+    
+    res$probs.scaled <- unseenlabelpres$probmat
+    
+    
   }
-
-
+  
+  
   if(!is.null(y)){
-
-    rawerr <- sum(rawpres != y)/length(y)
-    message("Misclassification raw error: ", rawerr, " @ ", Sys.time(), "\n")
-
-
-    rawres <- sub_performance_evaluator(probs.l = list(scores),
+    
+    rawres <- sub_performance_evaluator(probs.l = list(res$scores),
                                         y.. = y,
-                                        scale.rowsum.to.1 = TRUE)
-
+                                        scale.rowsum.to.1 = TRUE, 
+                                        unseenlabelcutoff = unseenlabelcutoff)
+    
+    message("Misclassification raw error: ", rawres$misc.error, " @ ", Sys.time(), "\n")
     message("Multiclass AUC (Hand&Till 2001) raw scores: ", rawres$auc.HandTill, "\n")
     message("Brier score (BS) raw scores: ", rawres$brier, "\n")
     message("Multiclass log loss (LL) raw scores: ", rawres$mlogloss, "\n")
-
+    
     res$rawres <- rawres
-
-
+    
+    
     if(!is.null(calibratemod)){
-
-      err <- sum(pres != y)/length(y)
-      message("Misclassification error: ", err, " @ ", Sys.time(), "\n")
-
-
-      calres <- sub_performance_evaluator(probs.l = list(probs),
+      
+      calres <- sub_performance_evaluator(probs.l = list(res$probs),
                                           y.. = y,
-                                          scale.rowsum.to.1 = TRUE)
-
+                                          scale.rowsum.to.1 = TRUE, 
+                                          unseenlabelcutoff = unseenlabelcutoff)
+      
+      message("Misclassification raw error: ", calres$misc.error, " @ ", Sys.time(), "\n")
       message("Multiclass AUC (Hand&Till 2001) calibrated scores: ", calres$auc.HandTill, "\n")
       message("Brier score (BS) calibrated scores: ", calres$brier, "\n")
       message("Multiclass log loss (LL) calibrated scores: ", calres$mlogloss, "\n")
-
+      
       res$calires <- calres
-
+      
     }
   }
-
+  
   return(res)
-
+  
 }
 
 
