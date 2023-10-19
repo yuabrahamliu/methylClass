@@ -3570,45 +3570,102 @@ maincv <- function(y.. = NULL,
 
 #calibration
 
+unseenlabel <- function(probmat, 
+                        prelabels, 
+                        unseenlabelcutoff = NULL){
+  
+  res <- list()
+  
+  if(!is.numeric(unseenlabelcutoff)){
+    
+    res$prelabels <- prelabels
+    res$probmat <- NULL
+    
+    return(res)
+    
+  }else{
+    
+    if(unseenlabelcutoff > 1 | unseenlabelcutoff < 0){
+      
+      res$prelabels <- prelabels
+      res$probmat <- NULL
+      
+      return(res)
+      
+    }else{
+      
+      probmat <- t(apply(probmat, 1, function(x) x/sum(x)))
+      
+      rawmaxes <- apply(X = probmat, MARGIN = 1, FUN = max)
+      rawmaxes <- rawmaxes <= unseenlabelcutoff
+      
+      prelabels[rawmaxes] <- 'unknown'
+      
+      
+      res$prelabels <- prelabels
+      res$probmat <- probmat
+      
+      return(res)
+      
+    }
+    
+  }
+  
+}
+
+
+
 sub_performance_evaluator <- function(probs.l,
                                       y.. = NULL,
                                       idces = NULL,
-                                      scale.rowsum.to.1 = TRUE){
-
+                                      scale.rowsum.to.1 = TRUE, 
+                                      
+                                      unseenlabelcutoff = NULL){
+  
   probs <- do.call(rbind, probs.l)
-
+  
   if(!is.null(idces)){
-
+    
     probs <- probs[match(1:nrow(probs), idces),]
-
+    
   }
-
+  
   #probs <- probs[, levels(y..)]
-
+  
   if(scale.rowsum.to.1 == TRUE){
+    
     probs.rowsum1 <- t(apply(probs, 1, function(x) x/sum(x)))
+    
   }else{
+    
     probs.rowsum1 <-  probs
+    
   }
-
-  y.p.rowsum1 <- colnames(probs.rowsum1)[apply(probs.rowsum1,1, which.max)]
+  
+  y.p.rowsum1 <- colnames(probs.rowsum1)[apply(probs.rowsum1, 1, which.max)]
+  
+  y.p.rowsum1 <- unseenlabel(probmat = probs.rowsum1, 
+                             prelabels = y.p.rowsum1, 
+                             unseenlabelcutoff = unseenlabelcutoff)$prelabels
+  
   y.l <- list(y.p.rowsum1)
-
+  
   #Misclassification Error
-  err.misc.l <- lapply(y.l, subfunc_misclassification_rate, y.true.class = y..)
+  err.misc.l <- lapply(y.l, subfunc_misclassification_rate, 
+                       y.true.class = y..)
   err.misc <- unlist(err.misc.l)
-
+  
   #AUC HandTIll2001
   results.sc.p.rowsum1.l <- list(probs.rowsum1)
   auc.HT2001.l <- lapply(results.sc.p.rowsum1.l, subfunc_multiclass_AUC_HandTill2001, y.true.class = y..)
   auc.HT2001 <- unlist(auc.HT2001.l)
-
+  
   #Brier
   brierp.rowsum1 <- brier(scores = probs.rowsum1, y = y..)
-
+  
   #mlogloss
   loglp.rowsum1 <- mlogloss(scores = probs.rowsum1, y = y..)
-
+  
   # Results
   res <- list(misc.error = err.misc,
               auc.HandTill = auc.HT2001,
@@ -3616,7 +3673,6 @@ sub_performance_evaluator <- function(probs.l,
               mlogloss = loglp.rowsum1)
   return(res)
 }
-
 
 
 
