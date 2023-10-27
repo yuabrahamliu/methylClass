@@ -437,7 +437,15 @@ samplenumadjust <- function(x,
 
         if(length(otherprobes) < addsize){
           set.seed(seednum)
-          addprobes <- sample(x = otherprobes, size = addsize, replace = TRUE)
+          if(length(otherprobes) == 0){
+            
+            addprobes <- sample(x = baseprobes, size = addsize, replace = TRUE)
+            
+          }else{
+            
+            addprobes <- sample(x = otherprobes, size = addsize, replace = TRUE)
+            
+          }
         }else{
           set.seed(seednum)
           addprobes <- sample(x = otherprobes, size = addsize, replace = FALSE)
