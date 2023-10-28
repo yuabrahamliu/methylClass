@@ -779,6 +779,9 @@ subfunc_svm_e1071_linear_train_tuner_mc <- function(data.xTrain,
                                            #mc.preschedule = T,
                                            #mc.set.seed = T,
                                            mc.cores = mc.cores)
+
+    unregister_dopar()
+    
     print(Sys.time())
     return(cvfit.e1071.linear.C.tuner)
 
