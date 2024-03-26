@@ -1,6 +1,6 @@
 # Tutorial for R package methylClass
 
-## 
+## Yu Liu
 ## 10/12/2022
 
 ## Introduction
