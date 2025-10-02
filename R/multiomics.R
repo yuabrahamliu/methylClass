@@ -4720,8 +4720,8 @@ maintrain <- function(y.. = NULL,
     rho <- rho[1]
   }
 
-  #mogonetpyfile <- system.file("python", "mogonet_r.py", package = "methylClass")
-  mogonetpyfile <- '/data/liuy47/nihcodes/mogonet_r.py'
+  mogonetpyfile <- system.file("python", "mogonet_r.py", package = "methylClass")
+  #mogonetpyfile <- '/data/liuy47/nihcodes/mogonet_r.py'
 
   test_inverval <- 50
   featurescale <- TRUE
@@ -5643,6 +5643,7 @@ mainpredict <- function(newdat,
   return(res)
   
 }
+
 
 
 
